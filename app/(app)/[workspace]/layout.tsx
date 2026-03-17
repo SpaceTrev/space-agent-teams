@@ -1,0 +1,96 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname, useParams } from 'next/navigation'
+import { clsx } from 'clsx'
+import {
+  Bot,
+  Zap,
+  BarChart3,
+  Server,
+  Brain,
+  CreditCard,
+  Settings,
+  Users,
+  GitBranch,
+  MessageSquare,
+  ChevronLeft,
+} from 'lucide-react'
+
+const navItems = [
+  { label: 'Fleet', href: '', icon: Bot },
+  { label: 'Agents', href: '/agents', icon: Users },
+  { label: 'Tasks', href: '/tasks', icon: Zap },
+  { label: 'Sprints', href: '/sprints', icon: GitBranch },
+  { label: 'Sessions', href: '/sessions', icon: MessageSquare },
+  { label: 'Compute', href: '/compute', icon: Server },
+  { label: 'Models', href: '/models', icon: Brain },
+  { label: 'Billing', href: '/billing', icon: CreditCard },
+  { label: 'Settings', href: '/settings', icon: Settings },
+]
+
+export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const params = useParams()
+  const workspace = params.workspace as string
+
+  const basePath = `/${workspace}`
+
+  return (
+    <div className="flex h-full">
+      {/* Workspace sidebar */}
+      <aside className="w-48 flex-shrink-0 flex flex-col bg-gray-900 border-r border-gray-800">
+        {/* Workspace header */}
+        <div className="px-3 py-3 border-b border-gray-800">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-2"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            All workspaces
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300">
+              {workspace.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm font-semibold text-white capitalize truncate">
+              {workspace.replace(/-/g, ' ')}
+            </span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const href = `${basePath}${item.href}`
+            const isActive = item.href === ''
+              ? pathname === basePath
+              : pathname.startsWith(`${basePath}${item.href}`)
+            const Icon = item.icon
+
+            return (
+              <Link
+                key={item.label}
+                href={href}
+                className={clsx(
+                  'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors',
+                  isActive
+                    ? 'bg-gray-800 text-white font-medium'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                )}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+      </aside>
+
+      {/* Page content */}
+      <div className="flex-1 overflow-y-auto min-w-0">
+        {children}
+      </div>
+    </div>
+  )
+}
