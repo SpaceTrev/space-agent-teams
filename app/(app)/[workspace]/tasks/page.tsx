@@ -87,7 +87,8 @@ export default function TasksPage({ params }: { params: { workspace: string } })
         title="Dispatch New Task"
         description="Assign a task to an agent in this workspace"
         size="lg"
-      ><DispatchForm
+      >
+        <DispatchForm
           agents={mockAgents}
           sprints={mockSprints}
           onDispatch={handleDispatch}
