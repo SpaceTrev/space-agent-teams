@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { clsx } from 'clsx'
-import { Server, Plus, Cpu, MemoryStick, HardDrive, DollarSign, Power, StopCircle, RefreshCw, Globe } from 'lucide-react'
+import { Server, Plus, Cpu, HardDrive, DollarSign, Power, StopCircle, RefreshCw, Globe, Database } from 'lucide-react'
 import { Button } from '../../../../components/shared/button'
 import { Modal } from '../../../../components/shared/modal'
 import { Select, Input } from '../../../../components/shared/input'
@@ -200,7 +200,7 @@ export default function ComputePage({ params }: { params: { workspace: string } 
                   {server.cpu} vCPU
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <MemoryStick className="w-3.5 h-3.5" />
+                  <Database className="w-3.5 h-3.5" />
                   {(server.memoryMb / 1024).toFixed(0)} GB RAM
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">

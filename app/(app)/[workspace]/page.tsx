@@ -1,6 +1,6 @@
 import { FleetGrid } from '../../../components/fleet/fleet-grid'
 import { UsageMeter } from '../../../components/billing/usage-meter'
-import { Server, Cpu, MemoryStick, Activity, Plus } from 'lucide-react'
+import { Server, Cpu, Activity, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
 import Link from 'next/link'
 
