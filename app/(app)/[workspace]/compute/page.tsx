@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { clsx } from 'clsx'
 import { Server, Plus, Cpu, HardDrive, DollarSign, Power, StopCircle, RefreshCw, Globe, Database } from 'lucide-react'
 import { Button } from '../../../../components/shared/button'
@@ -90,7 +90,8 @@ const sizeOptions = [
   { value: 'large', label: 'Large — 8 vCPU, 16 GB RAM ($0.24/hr)' },
 ]
 
-export default function ComputePage({ params }: { params: { workspace: string } }) {
+export default function ComputePage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
   const [provisionOpen, setProvisionOpen] = useState(false)
   const [serverName, setServerName] = useState('')
   const [region, setRegion] = useState('us-east-1')

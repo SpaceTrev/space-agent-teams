@@ -10,12 +10,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
 
-if (!supabaseUrl) {
-  throw new Error('Missing env var: NEXT_PUBLIC_SUPABASE_URL')
-}
-if (!supabaseAnonKey) {
-  throw new Error('Missing env var: NEXT_PUBLIC_SUPABASE_ANON_KEY')
-}
+  // Throws moved to lazy evaluation inside functions
 
 // ============================================================
 // Browser (client-side) Supabase client
@@ -24,7 +19,8 @@ if (!supabaseAnonKey) {
 
 let browserClient: ReturnType<typeof createClient> | null = null
 
-export function getSupabaseBrowserClient() {
+export function getSupabaseBrowserClient(): any {
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Missing Supabase public env vars')
   if (browserClient) return browserClient
   browserClient = createClient(supabaseUrl!, supabaseAnonKey!, {
     auth: {
@@ -40,7 +36,8 @@ export function getSupabaseBrowserClient() {
 // Must be called inside a Server Component or Route Handler.
 // ============================================================
 
-export async function getSupabaseServerClient() {
+export async function getSupabaseServerClient(): Promise<any> {
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error('Missing Supabase public env vars')
   const cookieStore = await cookies()
 
   return createServerClient(supabaseUrl!, supabaseAnonKey!, {
@@ -74,7 +71,7 @@ export async function getSupabaseServerClient() {
 
 let adminClient: ReturnType<typeof createClient> | null = null
 
-export function getSupabaseAdminClient() {
+export function getSupabaseAdminClient(): any {
   if (!supabaseServiceKey) {
     throw new Error('Missing env var: SUPABASE_SERVICE_KEY — admin client unavailable')
   }

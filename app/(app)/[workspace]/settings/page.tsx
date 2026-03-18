@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { Settings, Users, Plus, Trash2, Mail, Shield } from 'lucide-react'
 import { Input, Textarea, Select } from '../../../../components/shared/input'
 import { Button } from '../../../../components/shared/button'
@@ -28,8 +28,9 @@ const roleOptions = [
   { value: 'viewer', label: 'Viewer' },
 ]
 
-export default function SettingsPage({ params }: { params: { workspace: string } }) {
-  const [name, setName] = useState(params.workspace.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
+export default function SettingsPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
+  const [name, setName] = useState(workspace.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
   const [description, setDescription] = useState('Automation workspace for backend and infrastructure tasks')
   const [defaultModel, setDefaultModel] = useState('anthropic:claude-3-5-sonnet-20241022')
   const [maxRetries, setMaxRetries] = useState('3')
@@ -69,7 +70,7 @@ export default function SettingsPage({ params }: { params: { workspace: string }
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">Workspace Settings</h1>
-          <p className="text-sm text-gray-500 capitalize">{params.workspace.replace(/-/g, ' ')}</p>
+          <p className="text-sm text-gray-500 capitalize">{workspace.replace(/-/g, ' ')}</p>
         </div>
       </div>
 

@@ -28,7 +28,7 @@ function toAnthropicMessages(
       }
 
       // Array content
-      const contentBlocks: Anthropic.ContentBlockParam[] = m.content.map((block) => {
+      const contentBlocks: any[] = m.content.map((block) => {
         if (block.type === 'text') {
           return { type: 'text', text: block.text ?? '' }
         }
