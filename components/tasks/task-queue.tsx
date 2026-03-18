@@ -43,7 +43,7 @@ export function TaskQueue({ tasks, onTaskClick, loading }: TaskQueueProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Filter tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-obsidian-700 mb-2 snap-x">
         {FILTER_TABS.map((tab) => {
           const count = countForStatus(tab.value)
           return (
@@ -51,20 +51,22 @@ export function TaskQueue({ tasks, onTaskClick, loading }: TaskQueueProps) {
               key={tab.value}
               onClick={() => setActiveFilter(tab.value)}
               className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap snap-start',
                 activeFilter === tab.value
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                  ? 'bg-obsidian-700 text-white shadow-inner'
+                  : 'text-slate-400 hover:text-white hover:bg-obsidian-800'
               )}
             >
-              {tab.label}
+              <span className={clsx(activeFilter === tab.value ? 'font-semibold' : 'font-light')}>
+                {tab.label}
+              </span>
               {count > 0 && (
                 <span
                   className={clsx(
-                    'inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-semibold px-1',
+                    'inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[10px] font-mono px-1 border',
                     activeFilter === tab.value
-                      ? 'bg-gray-600 text-gray-200'
-                      : 'bg-gray-800 text-gray-500'
+                      ? 'bg-obsidian-900 border-obsidian-700 text-slate-300'
+                      : 'bg-obsidian-900 border-transparent text-slate-500'
                   )}
                 >
                   {count}
@@ -79,13 +81,13 @@ export function TaskQueue({ tasks, onTaskClick, loading }: TaskQueueProps) {
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 bg-gray-800 rounded-xl animate-pulse border border-gray-700" />
+            <div key={i} className="h-28 bg-obsidian-800 rounded-xl animate-pulse border border-obsidian-700" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm text-gray-400">No tasks found</p>
-          <p className="text-xs text-gray-600 mt-1">
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-obsidian-800/50 rounded-xl border border-obsidian-700 border-dashed">
+          <p className="text-sm font-medium text-slate-300">No tasks found</p>
+          <p className="text-xs text-slate-500 font-light mt-1">
             {activeFilter !== 'all' ? `No ${activeFilter} tasks` : 'Dispatch a task to get started'}
           </p>
         </div>

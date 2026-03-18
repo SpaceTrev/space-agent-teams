@@ -6,7 +6,6 @@ import { SprintBoard } from '../../../../components/sprints/sprint-board'
 import { Modal } from '../../../../components/shared/modal'
 import { Button } from '../../../../components/shared/button'
 import { Input, Textarea } from '../../../../components/shared/input'
-import { Badge } from '../../../../components/shared/badge'
 import type { SprintStatus, TaskStatus, TaskPriority } from '../../../../lib/types'
 
 const mockSprints = [
@@ -100,10 +99,10 @@ export default function SprintsPage({ params }: { params: Promise<{ workspace: s
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Sprints</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{mockSprints.length} sprints total</p>
+          <h1 className="text-3xl font-serif font-bold tracking-tight text-white">Sprints</h1>
+          <p className="text-sm text-slate-400 font-light mt-1">{mockSprints.length} sprints total</p>
         </div>
         <Button variant="primary" onClick={() => setNewSprintOpen(true)}>
           <Plus className="w-4 h-4" />
@@ -113,10 +112,13 @@ export default function SprintsPage({ params }: { params: Promise<{ workspace: s
 
       {/* Active sprint */}
       {activeSprint && (
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Sprint</span>
+        <div className="mb-12 relative">
+          <div className="flex items-center gap-3 mb-4 mt-8 first:mt-0">
+            <h2 className="text-xs font-mono font-semibold text-champagne-600/70 uppercase tracking-widest">
+              Active Sprint
+            </h2>
+            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+            <div className="flex-1 h-px bg-obsidian-700" />
           </div>
           <SprintBoard {...activeSprint} />
         </div>
@@ -124,9 +126,14 @@ export default function SprintsPage({ params }: { params: Promise<{ workspace: s
 
       {/* Other sprints */}
       {otherSprints.length > 0 && (
-        <div>
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">All Sprints</h2>
-          <div className="space-y-4">
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-4 mt-8">
+            <h2 className="text-xs font-mono font-semibold text-champagne-600/70 uppercase tracking-widest">
+              All Sprints
+            </h2>
+            <div className="flex-1 h-px bg-obsidian-700" />
+          </div>
+          <div className="space-y-6">
             {otherSprints.map((sprint) => (
               <SprintBoard key={sprint.id} {...sprint} />
             ))}

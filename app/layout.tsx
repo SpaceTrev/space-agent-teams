@@ -3,7 +3,11 @@
 // ============================================================
 
 import type { Metadata, Viewport } from 'next'
+import { Inter, Playfair_Display } from 'next/font/google'
 import './globals.css'
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' })
 
 // ============================================================
 // Metadata
@@ -53,7 +57,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen antialiased">
+      <body className={`${inter.variable} ${playfair.variable} font-sans min-h-screen antialiased bg-[#09090B] text-white overflow-x-hidden`}>
         {children}
       </body>
     </html>

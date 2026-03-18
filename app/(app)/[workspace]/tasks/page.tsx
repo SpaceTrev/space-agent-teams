@@ -62,10 +62,10 @@ export default function TasksPage({ params }: { params: Promise<{ workspace: str
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Tasks</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{tasks.length} total tasks</p>
+          <h1 className="text-3xl font-serif font-bold tracking-tight text-white">Tasks</h1>
+          <p className="text-sm text-slate-400 font-light mt-1">{tasks.length} total tasks</p>
         </div>
         <Button variant="primary" onClick={() => setDispatchOpen(true)}>
           <Send className="w-4 h-4" />

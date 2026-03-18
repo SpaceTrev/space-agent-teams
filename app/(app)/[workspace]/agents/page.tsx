@@ -23,10 +23,10 @@ const statusMap: Record<string, { variant: 'green' | 'gray' | 'yellow' | 'blue' 
 }
 
 const typeColors: Record<string, string> = {
-  worker: 'text-blue-400 bg-blue-500/10',
-  orchestrator: 'text-purple-400 bg-purple-500/10',
-  specialist: 'text-orange-400 bg-orange-500/10',
-  reviewer: 'text-green-400 bg-green-500/10',
+  worker: 'text-blue-400 bg-blue-500/10 border border-blue-500/20',
+  orchestrator: 'text-purple-400 bg-purple-500/10 border border-purple-500/20',
+  specialist: 'text-champagne-500 bg-champagne-500/10 border border-champagne-500/20',
+  reviewer: 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20',
 }
 
 function modelShortName(model: string): string {
@@ -41,14 +41,14 @@ export default async function AgentsPage({ params }: { params: Promise<{ workspa
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Agents</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{agents.length} agents in this workspace</p>
+          <h1 className="text-3xl font-serif font-bold tracking-tight text-white">Agents</h1>
+          <p className="text-sm text-slate-400 font-light mt-1">{agents.length} agents in this workspace</p>
         </div>
         <Link
           href={`/${workspace}/agents/new`}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-champagne-500 hover:bg-champagne-400 text-obsidian-900 text-sm font-semibold rounded-lg transition-colors shadow-lg"
         >
           <Plus className="w-4 h-4" />
           Create Agent
@@ -56,38 +56,38 @@ export default async function AgentsPage({ params }: { params: Promise<{ workspa
       </div>
 
       {/* Agents table */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_140px_140px_100px_100px] text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3 border-b border-gray-800 bg-gray-900">
+      <div className="bg-obsidian-800 border border-obsidian-700 rounded-xl overflow-hidden shadow-2xl">
+        <div className="grid grid-cols-[1fr_140px_140px_100px_100px] text-xs font-mono font-semibold text-champagne-600/70 uppercase tracking-widest px-5 py-3 border-b border-obsidian-700 bg-obsidian-900/50">
           <span>Agent</span>
           <span>Type</span>
           <span>Model</span>
           <span>Tasks</span>
           <span>Status</span>
         </div>
-        <div className="divide-y divide-gray-800">
+        <div className="divide-y divide-obsidian-700/50">
           {agents.map((agent) => {
             const statusConfig = statusMap[agent.status] || { variant: 'gray' as const, label: agent.status }
             return (
               <Link
                 key={agent.id}
                 href={`/${workspace}/agents/${agent.id}`}
-                className="grid grid-cols-[1fr_140px_140px_100px_100px] items-center px-5 py-3.5 hover:bg-gray-800/50 transition-colors"
+                className="grid grid-cols-[1fr_140px_140px_100px_100px] items-center px-5 py-4 hover:bg-obsidian-700 transition-colors group"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-brand-400" />
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-obsidian-900 border border-obsidian-700 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-5 h-5 text-champagne-500" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-white truncate">{agent.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{agent.role}</p>
+                    <p className="text-xs text-slate-400 font-light truncate">{agent.role}</p>
                   </div>
                 </div>
                 <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium w-fit', typeColors[agent.type])}>
                   {agent.type}
                 </span>
-                <span className="text-xs text-gray-400 font-mono truncate">{modelShortName(agent.model)}</span>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <CheckCircle className="w-3.5 h-3.5 text-gray-600" />
+                <span className="text-xs text-slate-400 font-mono truncate">{modelShortName(agent.model)}</span>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-light">
+                  <CheckCircle className="w-3.5 h-3.5 text-slate-600" />
                   {agent.tasksCompleted}
                 </div>
                 <Badge variant={statusConfig.variant} dot size="sm">

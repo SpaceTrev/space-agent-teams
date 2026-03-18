@@ -15,21 +15,21 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600 hover:border-gray-500',
+    'bg-obsidian-800 text-slate-200 hover:bg-obsidian-700 border border-obsidian-700 hover:border-obsidian-600',
   primary:
-    'bg-brand-600 text-white hover:bg-brand-500 border border-brand-500 hover:border-brand-400 shadow-sm shadow-brand-900/50',
+    'bg-champagne-500 text-obsidian-900 hover:bg-champagne-400 border border-transparent shadow-[0_0_15px_rgba(230,194,128,0.2)] hover:shadow-[0_0_20px_rgba(230,194,128,0.3)]',
   destructive:
-    'bg-red-700 text-white hover:bg-red-600 border border-red-600 hover:border-red-500',
+    'bg-red-900/40 text-red-400 hover:bg-red-900/60 border border-red-900/50 hover:border-red-500/50',
   ghost:
-    'bg-transparent text-gray-300 hover:bg-gray-800 hover:text-white border border-transparent',
+    'bg-transparent text-slate-400 hover:bg-obsidian-800 hover:text-white border border-transparent',
   outline:
-    'bg-transparent text-gray-200 hover:bg-gray-800 border border-gray-600 hover:border-gray-400',
+    'bg-transparent text-slate-300 hover:bg-obsidian-800 border border-obsidian-700 hover:border-obsidian-600',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-xs font-medium rounded-md gap-1.5',
-  md: 'px-4 py-2 text-sm font-medium rounded-lg gap-2',
-  lg: 'px-5 py-2.5 text-base font-semibold rounded-lg gap-2',
+  sm: 'px-3 py-1.5 text-xs font-medium rounded-lg gap-1.5',
+  md: 'px-4 py-2 text-sm font-semibold rounded-lg gap-2',
+  lg: 'px-5 py-2.5 text-base font-semibold rounded-xl gap-2',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -51,8 +51,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={clsx(
-          'inline-flex items-center justify-center transition-all duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-900',
+          'inline-flex items-center justify-center transition-all duration-200',
+          'focus:outline-none focus:ring-2 focus:ring-champagne-500/50 focus:ring-offset-2 focus:ring-offset-obsidian-900',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           variantClasses[variant],
           sizeClasses[size],

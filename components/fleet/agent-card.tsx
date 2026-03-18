@@ -22,11 +22,11 @@ const statusConfig: Record<
   AgentDisplayStatus,
   { dot: string; badge: 'green' | 'gray' | 'red' | 'blue' | 'yellow' | 'orange'; label: string }
 > = {
-  working: { dot: 'bg-green-400 animate-pulse', badge: 'green', label: 'Working' },
-  idle: { dot: 'bg-gray-500', badge: 'gray', label: 'Idle' },
+  working: { dot: 'bg-emerald-400 animate-pulse', badge: 'green', label: 'Working' },
+  idle: { dot: 'bg-slate-500', badge: 'gray', label: 'Idle' },
   blocked: { dot: 'bg-red-500', badge: 'red', label: 'Blocked' },
-  'in-session': { dot: 'bg-blue-400 animate-pulse', badge: 'blue', label: 'In Session' },
-  'needs-review': { dot: 'bg-yellow-400', badge: 'yellow', label: 'Needs Review' },
+  'in-session': { dot: 'bg-indigo-400 animate-pulse', badge: 'blue', label: 'In Session' },
+  'needs-review': { dot: 'bg-champagne-400', badge: 'yellow', label: 'Needs Review' },
   paused: { dot: 'bg-orange-400', badge: 'orange', label: 'Paused' },
 }
 
@@ -57,29 +57,29 @@ export function AgentCard({
       onClick={onClick}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
       className={clsx(
-        'bg-gray-800 border border-gray-700 rounded-xl p-4 flex flex-col gap-3',
-        'transition-all duration-150',
-        onClick && 'cursor-pointer hover:border-gray-600 hover:bg-gray-750 hover:shadow-lg'
+        'bg-obsidian-800 border border-obsidian-700 rounded-xl p-4 flex flex-col gap-3',
+        'transition-all duration-200',
+        onClick && 'cursor-pointer hover:border-obsidian-600 hover:bg-obsidian-800/80 hover:shadow-xl'
       )}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex-shrink-0">
-            <div className="w-9 h-9 rounded-lg bg-gray-700 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-brand-400" />
+            <div className="w-9 h-9 rounded-lg bg-obsidian-900 border border-obsidian-700 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-champagne-500" />
             </div>
             {/* Status dot */}
             <span
               className={clsx(
-                'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-gray-800',
+                'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-obsidian-800',
                 config.dot
               )}
             />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate">{name}</p>
-            <p className="text-xs text-gray-400 truncate">{role}</p>
+            <p className="text-xs text-slate-400 font-light truncate">{role}</p>
           </div>
         </div>
         <Badge variant={config.badge} size="sm" dot>
@@ -88,29 +88,29 @@ export function AgentCard({
       </div>
 
       {/* Current task */}
-      <div className="min-h-[32px]">
+      <div className="min-h-[32px] mt-1">
         {currentTask ? (
           <div className="flex items-start gap-2">
-            <Zap className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-300 line-clamp-2">{currentTask}</p>
+            <Zap className="w-3.5 h-3.5 text-champagne-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-300 font-light line-clamp-2">{currentTask}</p>
           </div>
         ) : (
-          <p className="text-xs text-gray-600 italic">No active task</p>
+          <p className="text-xs text-slate-500 font-light italic">No active task</p>
         )}
       </div>
 
       {/* Footer stats */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-700/60">
+      <div className="flex items-center justify-between pt-3 mt-1 border-t border-obsidian-700/60">
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded bg-gray-700/70 flex items-center justify-center">
-            <span className="text-[9px] text-gray-400 font-mono">AI</span>
+          <div className="w-5 h-5 rounded bg-obsidian-900 border border-obsidian-700 flex items-center justify-center">
+            <span className="text-[9px] text-slate-400 font-mono">AI</span>
           </div>
-          <span className="text-xs text-gray-500 font-mono truncate max-w-[120px]">
+          <span className="text-xs text-slate-500 font-mono truncate max-w-[120px]">
             {modelShortName(model)}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-          <CheckCircle className="w-3.5 h-3.5 text-gray-600" />
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-light">
+          <CheckCircle className="w-3.5 h-3.5 text-slate-600" />
           <span>{tasksCompleted} tasks</span>
         </div>
       </div>

@@ -22,8 +22,8 @@ const mockServers = [
 ]
 
 const statusDotColor: Record<string, string> = {
-  running: 'bg-green-400 animate-pulse',
-  stopped: 'bg-gray-500',
+  running: 'bg-emerald-400 animate-pulse',
+  stopped: 'bg-slate-500',
   provisioning: 'bg-yellow-400 animate-pulse',
   error: 'bg-red-400',
 }
@@ -35,16 +35,16 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white capitalize">
+          <h1 className="text-3xl font-serif font-bold text-white capitalize tracking-tight">
             {workspace.replace(/-/g, ' ')} Fleet
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-slate-400 font-light mt-1">
             {mockAgents.filter((a) => a.status === 'working' || a.status === 'in-session').length} agents active
           </p>
         </div>
         <Link
           href={`/${workspace}/agents/new`}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-champagne-500 hover:bg-champagne-400 text-obsidian-900 text-sm font-semibold rounded-lg transition-colors shadow-lg"
         >
           <Plus className="w-4 h-4" />
           New Agent
@@ -52,7 +52,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
       </div>
 
       {/* Agent fleet */}
-      <div className="mb-10">
+      <div className="mb-12">
         <FleetGrid
           agents={mockAgents}
           onAgentClick={(id) => console.log('Agent clicked:', id)}
@@ -60,39 +60,41 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
       </div>
 
       {/* Compute servers */}
-      <div className="mb-8">
+      <div className="mb-12">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Compute Servers</h2>
-          <Link href={`/${workspace}/compute`} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+          <h2 className="text-xs font-mono font-semibold text-champagne-600/70 uppercase tracking-widest">Compute Servers</h2>
+          <Link href={`/${workspace}/compute`} className="text-xs font-medium text-champagne-500 hover:text-champagne-400 transition-colors">
             Manage
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {mockServers.map((server) => (
-            <div key={server.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <div key={server.id} className="bg-obsidian-800 border border-obsidian-700 hover:border-obsidian-600 transition-colors rounded-xl p-4 group">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Server className="w-5 h-5 text-gray-500" />
+                    <div className="w-8 h-8 rounded-lg bg-obsidian-900/50 border border-obsidian-700 flex items-center justify-center">
+                      <Server className="w-4 h-4 text-slate-400" />
+                    </div>
                     <span className={clsx(
-                      'absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900',
+                      'absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-obsidian-800',
                       statusDotColor[server.status]
                     )} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">{server.name}</p>
-                    <p className="text-xs text-gray-500">{server.provider} &middot; {server.region}</p>
+                    <p className="text-xs text-slate-500 font-light">{server.provider} &middot; {server.region}</p>
                   </div>
                 </div>
-                <span className="text-xs font-mono text-yellow-400">${server.costPerHour}/hr</span>
+                <span className="text-xs font-mono text-champagne-500">${server.costPerHour}/hr</span>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
-                <div className="flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5" />
+              <div className="grid grid-cols-2 gap-3 text-xs text-slate-400 font-light mt-4 pt-4 border-t border-obsidian-700/50">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-3.5 h-3.5 text-slate-500" />
                   {server.cpu} vCPU
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2">
+                  <Activity className="w-3.5 h-3.5 text-slate-500" />
                   {(server.memoryMb / 1024).toFixed(0)} GB RAM
                 </div>
               </div>
@@ -104,8 +106,8 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
       {/* Usage meters */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Usage This Month</h2>
-          <Link href={`/${workspace}/billing`} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+          <h2 className="text-xs font-mono font-semibold text-champagne-600/70 uppercase tracking-widest">Usage This Month</h2>
+          <Link href={`/${workspace}/billing`} className="text-xs font-medium text-champagne-500 hover:text-champagne-400 transition-colors">
             View billing
           </Link>
         </div>

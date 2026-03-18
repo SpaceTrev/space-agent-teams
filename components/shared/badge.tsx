@@ -10,28 +10,28 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  green: 'bg-green-500/15 text-green-400 ring-1 ring-inset ring-green-500/30',
-  yellow: 'bg-yellow-500/15 text-yellow-400 ring-1 ring-inset ring-yellow-500/30',
-  red: 'bg-red-500/15 text-red-400 ring-1 ring-inset ring-red-500/30',
-  gray: 'bg-gray-500/15 text-gray-400 ring-1 ring-inset ring-gray-500/30',
-  blue: 'bg-blue-500/15 text-blue-400 ring-1 ring-inset ring-blue-500/30',
-  purple: 'bg-purple-500/15 text-purple-400 ring-1 ring-inset ring-purple-500/30',
-  orange: 'bg-orange-500/15 text-orange-400 ring-1 ring-inset ring-orange-500/30',
+  green: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+  yellow: 'bg-champagne-500/10 text-champagne-400 border border-champagne-500/20',
+  red: 'bg-red-500/10 text-red-400 border border-red-500/20',
+  gray: 'bg-obsidian-800 text-slate-400 border border-obsidian-700 font-light',
+  blue: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
+  purple: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+  orange: 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
 }
 
 const dotColors: Record<BadgeVariant, string> = {
-  green: 'bg-green-400',
-  yellow: 'bg-yellow-400',
+  green: 'bg-emerald-400',
+  yellow: 'bg-champagne-400',
   red: 'bg-red-400',
-  gray: 'bg-gray-400',
-  blue: 'bg-blue-400',
+  gray: 'bg-slate-400',
+  blue: 'bg-indigo-400',
   purple: 'bg-purple-400',
   orange: 'bg-orange-400',
 }
 
 const sizeClasses = {
-  sm: 'px-2 py-0.5 text-xs',
-  md: 'px-2.5 py-1 text-xs',
+  sm: 'px-2 py-0.5 text-[10px] tracking-wide font-mono uppercase',
+  md: 'px-2.5 py-1 text-xs tracking-wide font-mono uppercase',
 }
 
 export function Badge({
@@ -45,7 +45,7 @@ export function Badge({
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 font-medium rounded-full',
+        'inline-flex items-center gap-1.5 font-semibold rounded-md',
         variantClasses[variant],
         sizeClasses[size],
         className

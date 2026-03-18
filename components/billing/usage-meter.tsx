@@ -8,6 +8,7 @@ interface UsageMeterItem {
   unit: string
   icon: React.ElementType
   color: string
+  textColor: string
 }
 
 interface UsageMeterProps {
@@ -36,12 +37,12 @@ function MeterBar({
 
   return (
     <div className="mt-2 space-y-1">
-      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-obsidian-700 rounded-full overflow-hidden">
         {pct != null ? (
           <div
             className={clsx(
               'h-full rounded-full transition-all duration-500',
-              isDanger ? 'bg-red-500' : isWarning ? 'bg-yellow-400' : color
+              isDanger ? 'bg-red-500' : isWarning ? 'bg-champagne-400' : color
             )}
             style={{ width: `${pct}%` }}
           />
@@ -51,11 +52,11 @@ function MeterBar({
       </div>
       {pct != null && (
         <div className="flex items-center justify-between text-[10px]">
-          <span className={clsx(isDanger ? 'text-red-400' : isWarning ? 'text-yellow-400' : 'text-gray-600')}>
+          <span className={clsx(isDanger ? 'text-red-400' : isWarning ? 'text-champagne-400' : 'text-slate-500')}>
             {pct}% used
           </span>
           {isDanger && <span className="text-red-400 font-medium">Near limit!</span>}
-          {isWarning && !isDanger && <span className="text-yellow-400">Approaching limit</span>}
+          {isWarning && !isDanger && <span className="text-champagne-400">Approaching limit</span>}
         </div>
       )}
     </div>
@@ -85,7 +86,8 @@ export function UsageMeter({
       total: tasksTotal,
       unit: 'tasks',
       icon: Zap,
-      color: 'bg-brand-500',
+      color: 'bg-champagne-500',
+      textColor: 'text-champagne-500',
     },
     {
       label: 'Tokens',
@@ -93,7 +95,8 @@ export function UsageMeter({
       total: tokensTotal,
       unit: 'tokens',
       icon: Brain,
-      color: 'bg-purple-500',
+      color: 'bg-indigo-400',
+      textColor: 'text-indigo-400',
     },
     {
       label: 'Compute',
@@ -101,7 +104,8 @@ export function UsageMeter({
       total: computeHoursTotal,
       unit: 'hrs',
       icon: Clock,
-      color: 'bg-green-500',
+      color: 'bg-emerald-500',
+      textColor: 'text-emerald-500',
     },
     {
       label: 'Cost',
@@ -109,7 +113,8 @@ export function UsageMeter({
       total: costBudget,
       unit: 'USD',
       icon: DollarSign,
-      color: 'bg-yellow-400',
+      color: 'bg-slate-300',
+      textColor: 'text-slate-300',
     },
   ]
 
@@ -129,20 +134,20 @@ export function UsageMeter({
             : formatNumber(item.total)
 
         return (
-          <div key={item.label} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+          <div key={item.label} className="bg-obsidian-800 border border-obsidian-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
-              <div className={clsx('w-6 h-6 rounded-md flex items-center justify-center', item.color.replace('bg-', 'bg-') + '/20')}>
-                <Icon className={clsx('w-3.5 h-3.5', item.color.replace('bg-', 'text-'))} />
+              <div className={clsx('w-6 h-6 rounded-md flex items-center justify-center', item.color.replace('bg-', 'bg-') + '/10')}>
+                <Icon className={clsx('w-3.5 h-3.5', item.textColor)} />
               </div>
-              <span className="text-xs font-medium text-gray-400">{item.label}</span>
+              <span className="text-xs font-medium text-slate-400">{item.label}</span>
             </div>
-            <div className="mt-2">
-              <span className="text-xl font-bold text-white">{displayUsed}</span>
+            <div className="mt-2 text-white">
+              <span className="text-xl font-serif tracking-wide">{displayUsed}</span>
               {item.total != null && (
-                <span className="text-xs text-gray-500 ml-1">/ {displayTotal}</span>
+                <span className="text-xs text-slate-500 ml-1 font-light">/ {displayTotal}</span>
               )}
               {item.total == null && (
-                <span className="text-xs text-gray-500 ml-1">this month</span>
+                <span className="text-xs text-slate-500 ml-1 font-light">this month</span>
               )}
             </div>
             <MeterBar used={item.used} total={item.total} color={item.color} />
