@@ -28,21 +28,22 @@ const statusDotColor: Record<string, string> = {
   error: 'bg-red-400',
 }
 
-export default function WorkspacePage({ params }: { params: { workspace: string } }) {
+export default async function WorkspacePage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = await params
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white capitalize">
-            {params.workspace.replace(/-/g, ' ')} Fleet
+            {workspace.replace(/-/g, ' ')} Fleet
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {mockAgents.filter((a) => a.status === 'working' || a.status === 'in-session').length} agents active
           </p>
         </div>
         <Link
-          href={`/${params.workspace}/agents/new`}
+          href={`/${workspace}/agents/new`}
           className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -62,7 +63,7 @@ export default function WorkspacePage({ params }: { params: { workspace: string 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Compute Servers</h2>
-          <Link href={`/${params.workspace}/compute`} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+          <Link href={`/${workspace}/compute`} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
             Manage
           </Link>
         </div>
@@ -104,7 +105,7 @@ export default function WorkspacePage({ params }: { params: { workspace: string 
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Usage This Month</h2>
-          <Link href={`/${params.workspace}/billing`} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+          <Link href={`/${workspace}/billing`} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
             View billing
           </Link>
         </div>
