@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, use } from 'react'
+import Link from 'next/link'
 import { Plus, GitBranch } from 'lucide-react'
 import { SprintBoard } from '../../../../components/sprints/sprint-board'
 import { Modal } from '../../../../components/shared/modal'
@@ -113,12 +114,14 @@ export default function SprintsPage({ params }: { params: Promise<{ workspace: s
 
       {/* Active sprint */}
       {activeSprint && (
-        <div className="mb-8">
+        <div className="mb-8 group">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Sprint</span>
           </div>
-          <SprintBoard {...activeSprint} />
+          <Link href={`/${workspace}/sprints/${activeSprint.id}`} className="block transition-transform group-hover:-translate-y-1 duration-300">
+            <SprintBoard {...activeSprint} />
+          </Link>
         </div>
       )}
 
@@ -128,7 +131,9 @@ export default function SprintsPage({ params }: { params: Promise<{ workspace: s
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">All Sprints</h2>
           <div className="space-y-4">
             {otherSprints.map((sprint) => (
-              <SprintBoard key={sprint.id} {...sprint} />
+              <Link key={sprint.id} href={`/${workspace}/sprints/${sprint.id}`} className="block transition-transform hover:-translate-y-1 duration-300">
+                <SprintBoard {...sprint} />
+              </Link>
             ))}
           </div>
         </div>

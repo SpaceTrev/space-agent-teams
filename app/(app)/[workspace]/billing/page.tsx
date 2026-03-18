@@ -8,6 +8,12 @@ const months = [
   { month: 'January 2026', tasks: 720, tokens: 2800000, compute: 3.8, cost: 99.0, aiCost: 33.6, margin: 65.4 },
 ]
 
+const departmentMargins = [
+  { department: 'Engineering Swarm', revenue: 6500, tokenCost: 42.50, computeCost: 28.00, tasks: 840, marginRaw: 6429.50, marginPct: 98.9 },
+  { department: 'Support Swarm', revenue: 1200, tokenCost: 12.80, computeCost: 15.00, tasks: 320, marginRaw: 1172.20, marginPct: 97.6 },
+  { department: 'Marketing Swarm', revenue: 850, tokenCost: 2.90, computeCost: 5.00, tasks: 80, marginRaw: 842.10, marginPct: 99.0 },
+]
+
 const current = months[0]
 
 export default async function BillingPage({ params }: { params: Promise<{ workspace: string }> }) {
@@ -91,6 +97,36 @@ export default async function BillingPage({ params }: { params: Promise<{ worksp
           planName="Pro"
           billingPeriod="March 2026"
         />
+      </div>
+
+      {/* Margin by Department */}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Margin by Department (March 2026)</h2>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-[1fr_80px_100px_100px_120px_100px] text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3 border-b border-gray-800">
+            <span>Department</span>
+            <span className="text-right">Tasks</span>
+            <span className="text-right">Token Cost</span>
+            <span className="text-right">Compute Cost</span>
+            <span className="text-right">Value/Revenue</span>
+            <span className="text-right">Margin</span>
+          </div>
+          <div className="divide-y divide-gray-800/50">
+            {departmentMargins.map((dept) => (
+              <div key={dept.department} className="grid grid-cols-[1fr_80px_100px_100px_120px_100px] items-center px-5 py-3.5 hover:bg-gray-800/40 transition-colors">
+                <span className="text-sm font-medium text-gray-200">{dept.department}</span>
+                <span className="text-xs text-gray-400 text-right">{dept.tasks}</span>
+                <span className="text-xs text-gray-400 text-right">${dept.tokenCost.toFixed(2)}</span>
+                <span className="text-xs text-gray-400 text-right">${dept.computeCost.toFixed(2)}</span>
+                <span className="text-sm text-white font-mono text-right">${dept.revenue.toLocaleString()}</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-mono text-green-400">${dept.marginRaw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-[10px] text-green-500/70">{dept.marginPct}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Monthly history */}

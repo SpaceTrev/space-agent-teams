@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Bot, ChevronRight, Play, Check } from 'lucide-react';
+import { clsx } from 'clsx';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -38,12 +39,14 @@ function NoiseOverlay() {
 function Navbar() {
   const navRef = useRef<HTMLElement>(null);
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
   useGSAP(() => {
     ScrollTrigger.create({
       start: "top -50",
       end: 99999,
-      toggleClass: { className: "bg-[#09090B]/80 backdrop-blur-md border-slate-800 shadow-xl", targets: navRef.current },
-      onUpdate: (self) => {
+      onToggle: (self: any) => setIsScrolled(self.isActive),
+      onUpdate: (self: any) => {
         if (self.direction === 1) {
           gsap.to(navRef.current, { y: -100, duration: 0.3, ease: 'power2.inOut' });
         } else {
@@ -56,7 +59,10 @@ function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-5xl rounded-full border border-transparent transition-colors duration-500 ease-out"
+      className={clsx(
+        "fixed top-4 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-5xl rounded-full border transition-colors duration-500 ease-out",
+        isScrolled ? "bg-[#09090B]/80 backdrop-blur-md border-slate-800 shadow-xl" : "border-transparent text-slate-100"
+      )}
     >
       <div className="flex h-14 items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 group">
@@ -468,7 +474,7 @@ function Protocol() {
   const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(() => {
-    const cards: HTMLElement[] = gsap.utils.toArray('.protocol-card');
+    const cards = gsap.utils.toArray('.protocol-card') as HTMLElement[];
     
     cards.forEach((card: HTMLElement, index: number) => {
       ScrollTrigger.create({
