@@ -3,7 +3,8 @@
 import { useState, use } from 'react'
 import { ProviderConfig } from '../../../../components/models/provider-config'
 import { ModelPicker } from '../../../../components/models/model-picker'
-import { Brain, Plus } from 'lucide-react'
+import { Brain, Plus, GitMerge, ArrowRight } from 'lucide-react'
+import { clsx } from 'clsx'
 import type { ModelProviderType } from '../../../../lib/types'
 
 const configuredProviders = [
@@ -109,6 +110,13 @@ const allModels = configuredProviders.flatMap((p) =>
   }))
 )
 
+const mockRoutingRules = [
+  { id: '1', name: 'High Priority Tasks', condition: 'Priority == Critical', model: 'anthropic:claude-3-5-sonnet-20241022', isActive: true },
+  { id: '2', name: 'Data Analysis', condition: 'Category == Analysis', model: 'groq:llama-3.1-70b-versatile', isActive: true },
+  { id: '3', name: 'Web Research', condition: 'Requires Internet == True', model: 'perplexity:llama-3.1-sonar-large-128k-online', isActive: true },
+  { id: '4', name: 'Nightly Batch Jobs', condition: 'Cost Sensitivity == High', model: 'groq:llama-3.1-8b-instant', isActive: false },
+]
+
 export default function ModelsPage({ params }: { params: Promise<{ workspace: string }> }) {
   const { workspace } = use(params)
   const [defaultModel, setDefaultModel] = useState('anthropic:claude-3-5-sonnet-20241022')
@@ -146,6 +154,41 @@ export default function ModelsPage({ params }: { params: Promise<{ workspace: st
           value={defaultModel}
           onChange={setDefaultModel}
         />
+      </div>
+
+      {/* Routing Rules Engine */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-semibold text-white mb-1">Routing Rules Engine</h2>
+            <p className="text-xs text-gray-500">
+              Dynamically route tasks to different active models based on context.
+            </p>
+          </div>
+          <button className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600/10 text-brand-400 hover:bg-brand-600/20 text-xs font-medium rounded transition-colors">
+            <Plus className="w-3.5 h-3.5" />
+            Add Rule
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {mockRoutingRules.map(rule => (
+            <div key={rule.id} className={clsx("flex items-center gap-4 px-4 py-3 border rounded-lg", rule.isActive ? "border-brand-500/30 bg-gray-800/50" : "border-gray-800 bg-gray-900 opacity-60")}>
+              <GitMerge className={clsx("w-4 h-4", rule.isActive ? "text-brand-400" : "text-gray-600")} />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-200">{rule.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-mono text-gray-500 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">{rule.condition}</span>
+                  <ArrowRight className="w-3 h-3 text-gray-600" />
+                  <span className="text-xs font-mono text-brand-400/80">{rule.model.split(':').pop()}</span>
+                </div>
+              </div>
+              <div className={clsx("text-xs font-medium px-2 py-1 rounded-md", rule.isActive ? "bg-green-500/10 text-green-400" : "bg-gray-800 text-gray-500")}>
+                {rule.isActive ? 'Active' : 'Disabled'}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Provider configs */}
