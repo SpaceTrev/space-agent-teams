@@ -72,7 +72,7 @@ function toGeminiFunctionDeclarations(tools: ModelTool[]): FunctionDeclaration[]
   return tools.map((t) => ({
     name: t.name,
     description: t.description,
-    parameters: t.parameters as FunctionDeclaration['parameters'],
+    parameters: t.parameters as any,
   }))
 }
 
@@ -117,7 +117,7 @@ export async function callGeminiModel(
 
   const model = genAI.getGenerativeModel({
     model: options.model,
-    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
+    systemInstruction: systemInstruction || undefined,
     generationConfig: {
       maxOutputTokens: options.max_tokens ?? 4096,
       temperature: options.temperature ?? 0.7,

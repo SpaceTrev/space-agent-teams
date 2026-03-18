@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const supabase = getSupabaseAdminClient()
+  const supabase = getSupabaseAdminClient() as any
 
   try {
     switch (event.type) {

@@ -224,6 +224,8 @@ export interface Agent {
   current_task_id: string | null
   /** Memory / context store reference */
   memory_namespace: string | null
+  /** Extensible metadata including skills */
+  metadata?: Record<string, unknown>
   created_by: string
   created_at: string
   updated_at: string

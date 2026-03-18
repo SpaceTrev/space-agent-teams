@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { TaskQueue } from '../../../../components/tasks/task-queue'
 import { DispatchForm } from '../../../../components/tasks/dispatch-form'
 import { Modal } from '../../../../components/shared/modal'
@@ -31,7 +31,8 @@ const mockSprints = [
   { id: 's2', name: 'Sprint 5 — Performance' },
 ]
 
-export default function TasksPage({ params }: { params: { workspace: string } }) {
+export default function TasksPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
   const [tasks, setTasks] = useState(mockTasks)
   const [dispatchOpen, setDispatchOpen] = useState(false)
 
@@ -76,7 +77,7 @@ export default function TasksPage({ params }: { params: { workspace: string } })
       <TaskQueue
         tasks={tasks}
         onTaskClick={(id) => {
-          window.location.href = `/${params.workspace}/tasks/${id}`
+          window.location.href = `/${workspace}/tasks/${id}`
         }}
       />
 

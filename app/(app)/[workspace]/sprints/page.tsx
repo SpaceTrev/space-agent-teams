@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { Plus, GitBranch } from 'lucide-react'
 import { SprintBoard } from '../../../../components/sprints/sprint-board'
 import { Modal } from '../../../../components/shared/modal'
@@ -77,7 +77,8 @@ const mockSprints = [
   },
 ]
 
-export default function SprintsPage({ params }: { params: { workspace: string } }) {
+export default function SprintsPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
   const [newSprintOpen, setNewSprintOpen] = useState(false)
   const [name, setName] = useState('')
   const [goal, setGoal] = useState('')

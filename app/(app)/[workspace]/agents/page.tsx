@@ -35,7 +35,9 @@ function modelShortName(model: string): string {
   return name.replace(/-\d{8}$/, '').slice(0, 28)
 }
 
-export default function AgentsPage({ params }: { params: { workspace: string } }) {
+export default async function AgentsPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = await params
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Header */}
@@ -45,7 +47,7 @@ export default function AgentsPage({ params }: { params: { workspace: string } }
           <p className="text-sm text-gray-500 mt-0.5">{agents.length} agents in this workspace</p>
         </div>
         <Link
-          href={`/${params.workspace}/agents/new`}
+          href={`/${workspace}/agents/new`}
           className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -68,7 +70,7 @@ export default function AgentsPage({ params }: { params: { workspace: string } }
             return (
               <Link
                 key={agent.id}
-                href={`/${params.workspace}/agents/${agent.id}`}
+                href={`/${workspace}/agents/${agent.id}`}
                 className="grid grid-cols-[1fr_140px_140px_100px_100px] items-center px-5 py-3.5 hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">

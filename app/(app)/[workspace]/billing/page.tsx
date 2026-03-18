@@ -10,7 +10,8 @@ const months = [
 
 const current = months[0]
 
-export default function BillingPage({ params }: { params: { workspace: string } }) {
+export default async function BillingPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = await params
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       {/* Header */}

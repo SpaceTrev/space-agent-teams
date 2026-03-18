@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { ProviderConfig } from '../../../../components/models/provider-config'
 import { ModelPicker } from '../../../../components/models/model-picker'
 import { Brain, Plus } from 'lucide-react'
@@ -109,7 +109,8 @@ const allModels = configuredProviders.flatMap((p) =>
   }))
 )
 
-export default function ModelsPage({ params }: { params: { workspace: string } }) {
+export default function ModelsPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
   const [defaultModel, setDefaultModel] = useState('anthropic:claude-3-5-sonnet-20241022')
 
   const handleSaveProvider = async (providerId: string, data: { apiKey?: string; defaultModel?: string; isActive: boolean }) => {
