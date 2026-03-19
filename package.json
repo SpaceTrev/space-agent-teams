@@ -8,12 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "supabase db push",
-    "db:generate": "supabase gen types typescript --local > lib/database.types.ts"
+    "db:generate": "supabase gen types typescript --local > lib/database.types.ts",
+    "mcp": "npx tsx mcp/server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
     "@google/generative-ai": "^0.21.0",
     "@gsap/react": "^2.1.2",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@stripe/stripe-js": "^4.0.0",
     "@supabase/ssr": "^0.5.0",
     "@supabase/supabase-js": "^2.45.0",

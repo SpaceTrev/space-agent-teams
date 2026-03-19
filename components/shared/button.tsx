@@ -15,15 +15,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600 hover:border-gray-500',
+    'bg-gray-700 light:bg-gray-200 text-gray-100 light:text-gray-900 hover:bg-gray-600 light:hover:bg-gray-300 border border-gray-600 light:border-gray-300 hover:border-gray-500 light:hover:border-gray-400',
   primary:
-    'bg-brand-600 text-white hover:bg-brand-500 border border-brand-500 hover:border-brand-400 shadow-sm shadow-brand-900/50',
+    'bg-brand-600 text-white hover:bg-brand-500 border border-brand-500 hover:border-brand-400 shadow-sm shadow-brand-900/50 light:shadow-brand-200/50',
   destructive:
-    'bg-red-700 text-white hover:bg-red-600 border border-red-600 hover:border-red-500',
+    'bg-red-700 light:bg-red-600 text-white hover:bg-red-600 light:hover:bg-red-500 border border-red-600 light:border-red-500 hover:border-red-500 light:hover:border-red-400',
   ghost:
-    'bg-transparent text-gray-300 hover:bg-gray-800 hover:text-white border border-transparent',
+    'bg-transparent text-gray-300 light:text-gray-700 hover:bg-gray-800 light:hover:bg-gray-100 hover:text-white light:hover:text-gray-900 border border-transparent',
   outline:
-    'bg-transparent text-gray-200 hover:bg-gray-800 border border-gray-600 hover:border-gray-400',
+    'bg-transparent text-gray-200 light:text-gray-700 hover:bg-gray-800 light:hover:bg-gray-100 border border-gray-600 light:border-gray-300 hover:border-gray-400 light:hover:border-gray-400',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -52,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={clsx(
           'inline-flex items-center justify-center transition-all duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-900',
+          'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-gray-900 light:focus:ring-offset-white',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           variantClasses[variant],
           sizeClasses[size],

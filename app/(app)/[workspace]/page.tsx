@@ -1,35 +1,125 @@
+'use client'
+
+import { useEffect, useState, use } from 'react'
 import { FleetGrid } from '../../../components/fleet/fleet-grid'
 import { UsageMeter } from '../../../components/billing/usage-meter'
 import { Server, Cpu, Activity, Plus } from 'lucide-react'
 import { clsx } from 'clsx'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
+import type { AgentDisplayStatus } from '../../../components/fleet/agent-card'
 
-// Mock data — in production fetched via server components
-const mockAgents = [
-  { id: '1', name: 'Aria', role: 'Senior Backend Engineer', status: 'working' as const, currentTask: 'Refactoring auth middleware to support OAuth 2.0 flows', model: 'anthropic:claude-3-5-sonnet-20241022', tasksCompleted: 142, department: 'Engineering' },
-  { id: '2', name: 'Dev-1', role: 'Backend Developer', status: 'idle' as const, currentTask: null, model: 'anthropic:claude-3-haiku-20240307', tasksCompleted: 89, department: 'Engineering' },
-  { id: '3', name: 'Dev-2', role: 'API Specialist', status: 'working' as const, currentTask: 'Writing OpenAPI spec for payment service', model: 'groq:llama-3.1-70b-versatile', tasksCompleted: 64, department: 'Engineering' },
-  { id: '4', name: 'QA-Bot', role: 'QA Automation', status: 'in-session' as const, currentTask: 'Running integration test suite', model: 'gemini:gemini-1.5-pro', tasksCompleted: 211, department: 'Engineering' },
-  { id: '5', name: 'Blake', role: 'Content Writer', status: 'working' as const, currentTask: 'Drafting Q1 marketing email campaign', model: 'anthropic:claude-3-5-sonnet-20241022', tasksCompleted: 78, department: 'Marketing' },
-  { id: '6', name: 'Scout', role: 'Market Research', status: 'needs-review' as const, currentTask: 'Competitor analysis report pending approval', model: 'perplexity:llama-3.1-sonar-large-128k-online', tasksCompleted: 45, department: 'Marketing' },
-  { id: '7', name: 'Casey', role: 'Support Specialist', status: 'working' as const, currentTask: 'Triaging 23 new support tickets', model: 'groq:llama-3.1-8b-instant', tasksCompleted: 512, department: 'Support' },
-  { id: '8', name: 'Triage-1', role: 'Ticket Router', status: 'working' as const, currentTask: 'Routing tickets to appropriate queues', model: 'groq:llama-3.1-8b-instant', tasksCompleted: 389, department: 'Support' },
-]
+interface AgentRow {
+  id: string
+  name: string
+  description: string | null
+  type: string
+  status: string
+  model: string
+  total_tasks_completed: number
+  current_task_id: string | null
+}
 
-const mockServers = [
-  { id: '1', name: 'compute-01', provider: 'Railway', status: 'running', cpu: 4, memoryMb: 8192, costPerHour: 0.12, region: 'us-east-1' },
-  { id: '2', name: 'compute-02', provider: 'Railway', status: 'running', cpu: 2, memoryMb: 4096, costPerHour: 0.06, region: 'us-east-1' },
-]
+interface ServerRow {
+  id: string
+  name: string
+  provider: string
+  status: string
+  cpu: number
+  memory_mb: number
+  cost_per_hour_usd: number
+  region: string | null
+}
 
 const statusDotColor: Record<string, string> = {
   running: 'bg-green-400 animate-pulse',
   stopped: 'bg-gray-500',
   provisioning: 'bg-yellow-400 animate-pulse',
+  stopping: 'bg-yellow-400',
   error: 'bg-red-400',
 }
 
-export default async function WorkspacePage({ params }: { params: Promise<{ workspace: string }> }) {
-  const { workspace } = await params
+function agentStatusToDisplay(status: string): AgentDisplayStatus {
+  const map: Record<string, AgentDisplayStatus> = {
+    idle: 'idle',
+    running: 'working',
+    paused: 'idle',
+    error: 'needs-review',
+    archived: 'idle',
+  }
+  return map[status] ?? 'idle'
+}
+
+export default function WorkspacePage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
+  const { workspaces } = useAuth()
+  const [agents, setAgents] = useState<AgentRow[]>([])
+  const [servers, setServers] = useState<ServerRow[]>([])
+  const [taskCount, setTaskCount] = useState(0)
+  const [totalCost, setTotalCost] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  const ws = workspaces.find((w) => w.slug === workspace)
+
+  useEffect(() => {
+    if (!ws) return
+
+    async function load() {
+      try {
+        const [agentsRes, serversRes, tasksRes] = await Promise.all([
+          fetch(`/api/agents?workspace_id=${ws!.id}`),
+          fetch(`/api/compute?workspace_id=${ws!.id}`),
+          fetch(`/api/tasks?workspace_id=${ws!.id}&per_page=100`),
+        ])
+
+        if (agentsRes.ok) {
+          const data = await agentsRes.json()
+          setAgents(data.agents ?? [])
+        }
+        if (serversRes.ok) {
+          const data = await serversRes.json()
+          setServers(data.servers ?? [])
+        }
+        if (tasksRes.ok) {
+          const data = await tasksRes.json()
+          const tasks = data.tasks ?? []
+          setTaskCount(tasks.length)
+          setTotalCost(tasks.reduce((sum: number, t: { cost_usd: number }) => sum + (Number(t.cost_usd) || 0), 0))
+        }
+      } catch (err) {
+        console.error('Failed to load workspace data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [ws])
+
+  const fleetAgents = agents.map((a) => ({
+    id: a.id,
+    name: a.name,
+    role: a.description ?? a.type,
+    status: agentStatusToDisplay(a.status),
+    currentTask: a.current_task_id ? 'Running task...' : null,
+    model: a.model,
+    tasksCompleted: a.total_tasks_completed ?? 0,
+    department: a.type.charAt(0).toUpperCase() + a.type.slice(1),
+  }))
+
+  const activeAgents = agents.filter((a) => a.status === 'running').length
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Loading workspace...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Page header */}
@@ -39,7 +129,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
             {workspace.replace(/-/g, ' ')} Fleet
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {mockAgents.filter((a) => a.status === 'working' || a.status === 'in-session').length} agents active
+            {activeAgents} agent{activeAgents !== 1 ? 's' : ''} active
           </p>
         </div>
         <Link
@@ -53,10 +143,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
 
       {/* Agent fleet */}
       <div className="mb-10">
-        <FleetGrid
-          agents={mockAgents}
-          onAgentClick={(id) => console.log('Agent clicked:', id)}
-        />
+        <FleetGrid agents={fleetAgents} />
       </div>
 
       {/* Compute servers */}
@@ -67,38 +154,42 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
             Manage
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {mockServers.map((server) => (
-            <div key={server.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative">
-                    <Server className="w-5 h-5 text-gray-500" />
-                    <span className={clsx(
-                      'absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900',
-                      statusDotColor[server.status]
-                    )} />
+        {servers.length === 0 ? (
+          <p className="text-sm text-gray-600">No compute servers provisioned.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {servers.map((server) => (
+              <div key={server.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative">
+                      <Server className="w-5 h-5 text-gray-500" />
+                      <span className={clsx(
+                        'absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-gray-900',
+                        statusDotColor[server.status] ?? 'bg-gray-500'
+                      )} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">{server.name}</p>
+                      <p className="text-xs text-gray-500">{server.provider} {server.region ? `· ${server.region}` : ''}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{server.name}</p>
-                    <p className="text-xs text-gray-500">{server.provider} &middot; {server.region}</p>
+                  <span className="text-xs font-mono text-yellow-400">${Number(server.cost_per_hour_usd ?? 0).toFixed(3)}/hr</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5" />
+                    {server.cpu} vCPU
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5" />
+                    {(server.memory_mb / 1024).toFixed(0)} GB RAM
                   </div>
                 </div>
-                <span className="text-xs font-mono text-yellow-400">${server.costPerHour}/hr</span>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
-                <div className="flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5" />
-                  {server.cpu} vCPU
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5" />
-                  {(server.memoryMb / 1024).toFixed(0)} GB RAM
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Usage meters */}
@@ -110,14 +201,14 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
           </Link>
         </div>
         <UsageMeter
-          tasksUsed={1240}
-          tasksTotal={2000}
-          tokensUsed={4_820_000}
+          tasksUsed={taskCount}
+          tasksTotal={null}
+          tokensUsed={0}
           tokensTotal={null}
-          costUsd={124.5}
-          costBudget={200}
-          computeHoursUsed={7.5}
-          computeHoursTotal={10}
+          costUsd={totalCost}
+          costBudget={null}
+          computeHoursUsed={0}
+          computeHoursTotal={null}
         />
       </div>
     </div>

@@ -5,10 +5,11 @@
 // ============================================================
 
 import { getSupabaseAdminClient } from '@/lib/db'
-import { callModel, estimateCost, parseModelString, selectBestFreeModel } from '@/lib/models/registry'
+import { estimateCost } from '@/lib/models/registry'
 import { getAgentSkills, buildSkillPrompt } from '@/lib/skills'
-import { safeDecryptApiKey } from '@/lib/encryption'
-import type { Agent, Task, ModelMessage, ModelCallOptions, ModelProviderType } from '@/lib/types'
+import { sendWhatsApp } from '@/lib/whatsapp/client'
+import { executeWithChain, type ChainResult } from '@/lib/execution'
+import type { Agent, Task, ModelMessage, ModelProviderType } from '@/lib/types'
 
 // ============================================================
 // Helper: write a task log entry
@@ -34,43 +35,7 @@ async function writeTaskLog(
   })
 }
 
-// ============================================================
-// Helper: resolve the API key for a provider from workspace config
-// ============================================================
-
-async function resolveApiKey(
-  workspaceId: string,
-  provider: ModelProviderType
-): Promise<string | undefined> {
-  const supabase = getSupabaseAdminClient()
-
-  // Check workspace-level model_providers table first
-  const { data: providerRow } = await supabase
-    .from('model_providers')
-    .select('encrypted_api_key, iv')
-    .eq('workspace_id', workspaceId)
-    .eq('provider_type', provider)
-    .eq('is_active', true)
-    .single()
-
-  if (providerRow?.encrypted_api_key && providerRow?.iv) {
-    const decrypted = safeDecryptApiKey(providerRow.encrypted_api_key, providerRow.iv)
-    if (decrypted) return decrypted
-  }
-
-  // Fall back to environment variables
-  const envMap: Record<string, string | undefined> = {
-    anthropic: process.env.ANTHROPIC_API_KEY,
-    gemini: process.env.GEMINI_API_KEY,
-    groq: process.env.GROQ_API_KEY,
-    mistral: process.env.MISTRAL_API_KEY,
-    perplexity: process.env.PERPLEXITY_API_KEY,
-    openrouter: process.env.OPENROUTER_API_KEY,
-    ollama: undefined,
-  }
-
-  return envMap[provider]
-}
+// (API key resolution is now handled by lib/execution/provider-chain.ts)
 
 // ============================================================
 // runTask — main entry point called by the queue
@@ -122,35 +87,7 @@ export async function runTask(taskId: string): Promise<void> {
 
   try {
     // --------------------------------------------------------
-    // 3. Determine model to use
-    // --------------------------------------------------------
-
-    let provider: ModelProviderType
-    let modelId: string
-
-    const agentModel = agent?.model ?? null
-
-    if (agentModel && agentModel.includes(':')) {
-      const parsed = parseModelString(agentModel)
-      provider = parsed.provider
-      modelId = parsed.model
-    } else {
-      // Use workspace default or best free model
-      const best = selectBestFreeModel()
-      provider = best.provider
-      modelId = best.model
-    }
-
-    await writeTaskLog(taskId, agent?.id ?? null, 'info', 'system', `Using model: ${provider}:${modelId}`)
-
-    // --------------------------------------------------------
-    // 4. Resolve API key
-    // --------------------------------------------------------
-
-    const apiKey = await resolveApiKey(workspaceId, provider)
-
-    // --------------------------------------------------------
-    // 5. Build system prompt
+    // 3. Build system prompt
     // --------------------------------------------------------
 
     let systemPrompt = agent?.system_prompt ?? ''
@@ -176,7 +113,7 @@ export async function runTask(taskId: string): Promise<void> {
     }
 
     // --------------------------------------------------------
-    // 6. Build messages
+    // 4. Build messages
     // --------------------------------------------------------
 
     const messages: ModelMessage[] = []
@@ -198,7 +135,8 @@ export async function runTask(taskId: string): Promise<void> {
     messages.push({ role: 'user', content: userContent })
 
     // --------------------------------------------------------
-    // 7. Call the model
+    // 5. Execute via ProviderChain (model selection + key +
+    //    fallback + retry all handled by the chain)
     // --------------------------------------------------------
 
     const agentConfig = (agent as Agent | null)?.config ?? {
@@ -214,42 +152,35 @@ export async function runTask(taskId: string): Promise<void> {
       timeout_seconds: 300,
     }
 
-    const callOptions: ModelCallOptions = {
-      provider,
-      model: modelId,
+    const chainResult: ChainResult = await executeWithChain({
+      workspaceId,
+      agentModel: agent?.model ?? null,
       messages,
       system: systemPrompt || undefined,
       temperature: agentConfig.temperature,
       max_tokens: agentConfig.max_tokens,
-      stream: false,
-      api_key: apiKey,
-    }
-
-    await writeTaskLog(taskId, agent?.id ?? null, 'info', 'llm_call', `Calling ${provider}:${modelId}`, {
-      prompt_length: systemPrompt.length,
-      message_count: messages.length,
+      maxRetries: agentConfig.max_retries,
+      retryDelayMs: (agentConfig.retry_delay_seconds ?? 2) * 1000,
+      onLog: (level, message, data) =>
+        writeTaskLog(taskId, agent?.id ?? null, level, 'llm_call', message, data),
     })
 
-    const llmCallStart = Date.now()
-    const result = await callModel(callOptions)
-    const llmDurationMs = Date.now() - llmCallStart
+    const { result, provider, model: modelId } = chainResult
 
-    await writeTaskLog(
-      taskId,
-      agent?.id ?? null,
-      'info',
-      'llm_call',
-      `Model responded (${result.tokens_input} in / ${result.tokens_output} out)`,
-      {
-        tokens_input: result.tokens_input,
-        tokens_output: result.tokens_output,
-        duration_ms: llmDurationMs,
-        finish_reason: result.finish_reason,
-      }
-    )
+    // Log execution chain attempts
+    if (chainResult.attempts.length > 1) {
+      await writeTaskLog(
+        taskId,
+        agent?.id ?? null,
+        'info',
+        'system',
+        `Execution chain used ${chainResult.attempts.length} attempt(s) across providers`,
+        { attempts: chainResult.attempts, api_key_source: chainResult.api_key_source }
+      )
+    }
 
     // --------------------------------------------------------
-    // 8. Calculate cost
+    // 6. Calculate cost
     // --------------------------------------------------------
 
     const costUsd = estimateCost(provider, modelId, result.tokens_input, result.tokens_output)
@@ -313,7 +244,7 @@ export async function runTask(taskId: string): Promise<void> {
       metadata: {
         tokens_input: result.tokens_input,
         tokens_output: result.tokens_output,
-        duration_ms: llmDurationMs,
+        duration_ms: chainResult.attempts.reduce((sum, a) => sum + a.duration_ms, 0),
       },
       recorded_at: new Date().toISOString(),
     })
@@ -371,6 +302,19 @@ export async function runTask(taskId: string): Promise<void> {
         })
         .eq('id', workspaceId)
     }
+
+    // --------------------------------------------------------
+    // 14. WhatsApp callback (if task originated from WhatsApp)
+    // --------------------------------------------------------
+
+    const whatsappFrom = (task.metadata as Record<string, unknown>)?.whatsapp_from as string | undefined
+    if (whatsappFrom) {
+      const statusEmoji = finalStatus === 'completed' ? '✅' : '🔍'
+      await sendWhatsApp(
+        whatsappFrom,
+        `${statusEmoji} Task ${finalStatus}: ${task.title}\nDuration: ${actualDurationSeconds}s | Cost: $${costUsd.toFixed(4)}`
+      ).catch((e) => console.error('[Runner] WhatsApp callback failed:', e))
+    }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
     const actualDurationSeconds = Math.round((Date.now() - startTime) / 1000)
@@ -396,6 +340,15 @@ export async function runTask(taskId: string): Promise<void> {
         .from('agents')
         .update({ status: 'idle', current_task_id: null })
         .eq('id', agent.id)
+    }
+
+    // WhatsApp error callback
+    const whatsappFrom = (task.metadata as Record<string, unknown>)?.whatsapp_from as string | undefined
+    if (whatsappFrom) {
+      await sendWhatsApp(
+        whatsappFrom,
+        `❌ Task failed: ${task.title}\nError: ${errorMessage}`
+      ).catch((e) => console.error('[Runner] WhatsApp error callback failed:', e))
     }
 
     throw err

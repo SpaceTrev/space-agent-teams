@@ -428,8 +428,10 @@ CREATE INDEX idx_usage_events_task_id ON usage_events(task_id);
 CREATE INDEX idx_usage_events_event_type ON usage_events(event_type);
 CREATE INDEX idx_usage_events_recorded_at ON usage_events(recorded_at DESC);
 
--- Partition hint index for monthly billing queries
-CREATE INDEX idx_usage_events_org_month ON usage_events(organization_id, date_trunc('month', recorded_at));
+-- Partition hint index for monthly billing queries (using immutable wrapper)
+CREATE OR REPLACE FUNCTION date_trunc_month_immutable(ts TIMESTAMPTZ) RETURNS TIMESTAMPTZ
+  LANGUAGE sql IMMUTABLE AS $$ SELECT date_trunc('month', ts AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' $$;
+CREATE INDEX idx_usage_events_org_month ON usage_events(organization_id, date_trunc_month_immutable(recorded_at));
 
 -- ============================================================
 -- UPDATED_AT TRIGGER FUNCTION

@@ -147,3 +147,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: statusCode })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await requireAuth(req)
+    const workspaceId = req.nextUrl.searchParams.get('workspace_id')
+    const providerType = req.nextUrl.searchParams.get('provider_type')
+
+    if (!workspaceId || !providerType) {
+      return NextResponse.json(
+        { error: 'workspace_id and provider_type are required' },
+        { status: 400 }
+      )
+    }
+
+    await requireWorkspaceAccessById(workspaceId, user.id, 'admin')
+
+    const supabase = await getSupabaseServerClient()
+
+    const { error } = await supabase
+      .from('model_providers')
+      .delete()
+      .eq('workspace_id', workspaceId)
+      .eq('provider_type', providerType)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ deleted: true, provider_type: providerType })
+  } catch (err) {
+    const { message, statusCode } = toErrorResponse(err)
+    return NextResponse.json({ error: message }, { status: statusCode })
+  }
+}

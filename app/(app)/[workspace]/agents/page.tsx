@@ -1,18 +1,21 @@
+'use client'
+
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
-import { Plus, Bot, CheckCircle, Clock } from 'lucide-react'
+import { Plus, Bot, CheckCircle } from 'lucide-react'
 import { Badge } from '../../../../components/shared/badge'
+import { useAuth } from '@/lib/auth-context'
 
-const agents = [
-  { id: '1', name: 'Aria', role: 'Senior Backend Engineer', type: 'worker', status: 'running', department: 'Engineering', model: 'anthropic:claude-3-5-sonnet-20241022', tasksCompleted: 142, createdAt: '2025-11-01' },
-  { id: '2', name: 'Dev-1', role: 'Backend Developer', type: 'worker', status: 'idle', department: 'Engineering', model: 'anthropic:claude-3-haiku-20240307', tasksCompleted: 89, createdAt: '2025-11-05' },
-  { id: '3', name: 'Dev-2', role: 'API Specialist', type: 'specialist', status: 'running', department: 'Engineering', model: 'groq:llama-3.1-70b-versatile', tasksCompleted: 64, createdAt: '2025-11-10' },
-  { id: '4', name: 'QA-Bot', role: 'QA Automation', type: 'specialist', status: 'running', department: 'Engineering', model: 'gemini:gemini-1.5-pro', tasksCompleted: 211, createdAt: '2025-11-12' },
-  { id: '5', name: 'Blake', role: 'Content Writer', type: 'worker', status: 'running', department: 'Marketing', model: 'anthropic:claude-3-5-sonnet-20241022', tasksCompleted: 78, createdAt: '2025-12-01' },
-  { id: '6', name: 'Scout', role: 'Market Research', type: 'specialist', status: 'paused', department: 'Marketing', model: 'perplexity:llama-3.1-sonar-large-128k-online', tasksCompleted: 45, createdAt: '2025-12-10' },
-  { id: '7', name: 'Casey', role: 'Support Specialist', type: 'worker', status: 'running', department: 'Support', model: 'groq:llama-3.1-8b-instant', tasksCompleted: 512, createdAt: '2025-10-15' },
-  { id: '8', name: 'Orchestrator', role: 'Task Orchestrator', type: 'orchestrator', status: 'idle', department: 'Engineering', model: 'anthropic:claude-3-5-sonnet-20241022', tasksCompleted: 28, createdAt: '2025-12-20' },
-]
+interface AgentRow {
+  id: string
+  name: string
+  description: string | null
+  type: string
+  status: string
+  model: string
+  total_tasks_completed: number
+}
 
 const statusMap: Record<string, { variant: 'green' | 'gray' | 'yellow' | 'blue' | 'red' | 'orange'; label: string }> = {
   running: { variant: 'green', label: 'Running' },
@@ -35,8 +38,30 @@ function modelShortName(model: string): string {
   return name.replace(/-\d{8}$/, '').slice(0, 28)
 }
 
-export default async function AgentsPage({ params }: { params: Promise<{ workspace: string }> }) {
-  const { workspace } = await params
+export default function AgentsPage({ params }: { params: Promise<{ workspace: string }> }) {
+  const { workspace } = use(params)
+  const { workspaces } = useAuth()
+  const [agents, setAgents] = useState<AgentRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const ws = workspaces.find((w) => w.slug === workspace)
+
+  useEffect(() => {
+    if (!ws) return
+    fetch(`/api/agents?workspace_id=${ws.id}`)
+      .then((r) => r.ok ? r.json() : { agents: [] })
+      .then((data) => setAgents(data.agents ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [ws])
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -55,49 +80,58 @@ export default async function AgentsPage({ params }: { params: Promise<{ workspa
         </Link>
       </div>
 
-      {/* Agents table */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_140px_140px_100px_100px] text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3 border-b border-gray-800 bg-gray-900">
-          <span>Agent</span>
-          <span>Type</span>
-          <span>Model</span>
-          <span>Tasks</span>
-          <span>Status</span>
+      {agents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center mb-4">
+            <Bot className="w-8 h-8 text-gray-600" />
+          </div>
+          <p className="text-sm font-medium text-gray-300">No agents yet</p>
+          <p className="text-xs text-gray-500 mt-1">Create your first agent to get started</p>
         </div>
-        <div className="divide-y divide-gray-800">
-          {agents.map((agent) => {
-            const statusConfig = statusMap[agent.status] || { variant: 'gray' as const, label: agent.status }
-            return (
-              <Link
-                key={agent.id}
-                href={`/${workspace}/agents/${agent.id}`}
-                className="grid grid-cols-[1fr_140px_140px_100px_100px] items-center px-5 py-3.5 hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-brand-400" />
+      ) : (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-[1fr_140px_140px_100px_100px] text-xs font-semibold text-gray-500 uppercase tracking-wider px-5 py-3 border-b border-gray-800 bg-gray-900">
+            <span>Agent</span>
+            <span>Type</span>
+            <span>Model</span>
+            <span>Tasks</span>
+            <span>Status</span>
+          </div>
+          <div className="divide-y divide-gray-800">
+            {agents.map((agent) => {
+              const statusConfig = statusMap[agent.status] || { variant: 'gray' as const, label: agent.status }
+              return (
+                <Link
+                  key={agent.id}
+                  href={`/${workspace}/agents/${agent.id}`}
+                  className="grid grid-cols-[1fr_140px_140px_100px_100px] items-center px-5 py-3.5 hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-4 h-4 text-brand-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{agent.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{agent.description ?? agent.type}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{agent.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{agent.role}</p>
+                  <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium w-fit', typeColors[agent.type] ?? 'text-gray-400 bg-gray-500/10')}>
+                    {agent.type}
+                  </span>
+                  <span className="text-xs text-gray-400 font-mono truncate">{modelShortName(agent.model)}</span>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <CheckCircle className="w-3.5 h-3.5 text-gray-600" />
+                    {agent.total_tasks_completed ?? 0}
                   </div>
-                </div>
-                <span className={clsx('inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium w-fit', typeColors[agent.type])}>
-                  {agent.type}
-                </span>
-                <span className="text-xs text-gray-400 font-mono truncate">{modelShortName(agent.model)}</span>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <CheckCircle className="w-3.5 h-3.5 text-gray-600" />
-                  {agent.tasksCompleted}
-                </div>
-                <Badge variant={statusConfig.variant} dot size="sm">
-                  {statusConfig.label}
-                </Badge>
-              </Link>
-            )
-          })}
+                  <Badge variant={statusConfig.variant} dot size="sm">
+                    {statusConfig.label}
+                  </Badge>
+                </Link>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -1,40 +1,95 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState, useEffect, use } from 'react'
 import { TaskQueue } from '../../../../components/tasks/task-queue'
 import { DispatchForm } from '../../../../components/tasks/dispatch-form'
 import { Modal } from '../../../../components/shared/modal'
 import { Button } from '../../../../components/shared/button'
 import { Send } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
 import type { TaskStatus, TaskPriority } from '../../../../lib/types'
 
-const mockTasks = [
-  { id: '1', title: 'Refactor authentication middleware to support OAuth 2.0', status: 'completed' as TaskStatus, priority: 'high' as TaskPriority, agentName: 'Aria', createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), costUsd: 0.042 },
-  { id: '2', title: 'Write OpenAPI spec for payment service v3', status: 'running' as TaskStatus, priority: 'normal' as TaskPriority, agentName: 'Dev-2', createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), costUsd: 0.018 },
-  { id: '3', title: 'Generate unit tests for UserService class', status: 'completed' as TaskStatus, priority: 'normal' as TaskPriority, agentName: 'Dev-1', createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), costUsd: 0.067 },
-  { id: '4', title: 'Code review: PR #248 — Add rate limiting to API gateway', status: 'queued' as TaskStatus, priority: 'high' as TaskPriority, agentName: 'QA-Bot', createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), costUsd: 0 },
-  { id: '5', title: 'Analyze database query performance bottlenecks', status: 'failed' as TaskStatus, priority: 'critical' as TaskPriority, agentName: 'Aria', createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(), costUsd: 0.012 },
-  { id: '6', title: 'Create database migration for user preferences table', status: 'pending' as TaskStatus, priority: 'low' as TaskPriority, agentName: null, createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(), costUsd: 0 },
-  { id: '7', title: 'Document REST endpoints for the notification service', status: 'completed' as TaskStatus, priority: 'normal' as TaskPriority, agentName: 'Dev-2', createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(), costUsd: 0.031 },
-  { id: '8', title: 'Review and merge PR #251 — Fix auth token expiry bug', status: 'running' as TaskStatus, priority: 'critical' as TaskPriority, agentName: 'Aria', createdAt: new Date(Date.now() - 1000 * 60 * 8).toISOString(), costUsd: 0.028 },
-]
+interface TaskRow {
+  id: string
+  title: string
+  status: TaskStatus
+  priority: TaskPriority
+  cost_usd: number
+  created_at: string
+  agent?: { id: string; name: string } | null
+}
 
-const mockAgents = [
-  { id: '1', name: 'Aria', role: 'Senior Backend Engineer', status: 'running' },
-  { id: '2', name: 'Dev-1', role: 'Backend Developer', status: 'idle' },
-  { id: '3', name: 'Dev-2', role: 'API Specialist', status: 'running' },
-  { id: '4', name: 'QA-Bot', role: 'QA Automation', status: 'running' },
-]
+interface AgentOption {
+  id: string
+  name: string
+  role: string
+  status: string
+}
 
-const mockSprints = [
-  { id: 's1', name: 'Sprint 4 — API v2 Migration' },
-  { id: 's2', name: 'Sprint 5 — Performance' },
-]
+interface SprintOption {
+  id: string
+  name: string
+}
 
 export default function TasksPage({ params }: { params: Promise<{ workspace: string }> }) {
   const { workspace } = use(params)
-  const [tasks, setTasks] = useState(mockTasks)
+  const { workspaces } = useAuth()
+  const [tasks, setTasks] = useState<{ id: string; title: string; status: TaskStatus; priority: TaskPriority; agentName: string | null; createdAt: string; costUsd: number }[]>([])
+  const [agents, setAgents] = useState<AgentOption[]>([])
+  const [sprints, setSprints] = useState<SprintOption[]>([])
   const [dispatchOpen, setDispatchOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const ws = workspaces.find((w) => w.slug === workspace)
+
+  useEffect(() => {
+    if (!ws) return
+
+    async function load() {
+      try {
+        const [tasksRes, agentsRes, sprintsRes] = await Promise.all([
+          fetch(`/api/tasks?workspace_id=${ws!.id}&per_page=50`),
+          fetch(`/api/agents?workspace_id=${ws!.id}`),
+          fetch(`/api/sprints?workspace_id=${ws!.id}`),
+        ])
+
+        if (tasksRes.ok) {
+          const data = await tasksRes.json()
+          setTasks((data.tasks ?? []).map((t: TaskRow) => ({
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            priority: t.priority,
+            agentName: t.agent?.name ?? null,
+            createdAt: t.created_at,
+            costUsd: Number(t.cost_usd) || 0,
+          })))
+        }
+        if (agentsRes.ok) {
+          const data = await agentsRes.json()
+          setAgents((data.agents ?? []).map((a: { id: string; name: string; description: string | null; type: string; status: string }) => ({
+            id: a.id,
+            name: a.name,
+            role: a.description ?? a.type,
+            status: a.status,
+          })))
+        }
+        if (sprintsRes.ok) {
+          const data = await sprintsRes.json()
+          setSprints((data.sprints ?? []).map((s: { id: string; name: string }) => ({
+            id: s.id,
+            name: s.name,
+          })))
+        }
+      } catch (err) {
+        console.error('Failed to load tasks:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [ws])
 
   const handleDispatch = async (data: {
     agentId: string
@@ -43,20 +98,44 @@ export default function TasksPage({ params }: { params: Promise<{ workspace: str
     priority: TaskPriority
     requiresApproval: boolean
   }) => {
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 800))
-    const agent = mockAgents.find((a) => a.id === data.agentId)
-    const newTask = {
-      id: String(Date.now()),
-      title: data.prompt.length > 80 ? data.prompt.slice(0, 80) + '...' : data.prompt,
-      status: 'queued' as TaskStatus,
-      priority: data.priority,
-      agentName: agent?.name || null,
-      createdAt: new Date().toISOString(),
-      costUsd: 0,
+    if (!ws) return
+
+    const res = await fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspace_id: ws.id,
+        agent_id: data.agentId,
+        title: data.prompt.length > 120 ? data.prompt.slice(0, 120) + '...' : data.prompt,
+        description: data.prompt,
+        sprint_id: data.sprintId || undefined,
+        priority: data.priority,
+        requires_approval: data.requiresApproval,
+      }),
+    })
+
+    if (res.ok) {
+      const result = await res.json()
+      const agent = agents.find((a) => a.id === data.agentId)
+      setTasks((prev) => [{
+        id: result.task.id,
+        title: result.task.title,
+        status: result.task.status,
+        priority: result.task.priority,
+        agentName: agent?.name ?? null,
+        createdAt: result.task.created_at,
+        costUsd: 0,
+      }, ...prev])
     }
-    setTasks((prev) => [newTask, ...prev])
     setDispatchOpen(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-8 flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -90,8 +169,8 @@ export default function TasksPage({ params }: { params: Promise<{ workspace: str
         size="lg"
       >
         <DispatchForm
-          agents={mockAgents}
-          sprints={mockSprints}
+          agents={agents}
+          sprints={sprints}
           onDispatch={handleDispatch}
           onCancel={() => setDispatchOpen(false)}
         />

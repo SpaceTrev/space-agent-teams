@@ -59,25 +59,25 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 light:bg-black/40 backdrop-blur-sm"
         onClick={closeOnBackdrop ? onClose : undefined}
       />
 
       {/* Panel */}
       <div
         className={clsx(
-          'relative w-full bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl',
+          'relative w-full bg-gray-800 light:bg-white border border-gray-700 light:border-gray-200 rounded-2xl shadow-2xl',
           'flex flex-col max-h-[90vh]',
           sizeClasses[size]
         )}
       >
         {/* Header */}
         {(title || description) && (
-          <div className="flex items-start justify-between px-6 py-5 border-b border-gray-700 flex-shrink-0">
+          <div className="flex items-start justify-between px-6 py-5 border-b border-gray-700 light:border-gray-200 flex-shrink-0">
             <div>
-              {title && <h2 className="text-base font-semibold text-white">{title}</h2>}
+              {title && <h2 className="text-base font-semibold text-white light:text-gray-900">{title}</h2>}
               {description && (
-                <p className="mt-1 text-sm text-gray-400">{description}</p>
+                <p className="mt-1 text-sm text-gray-400 light:text-gray-600">{description}</p>
               )}
             </div>
             <Button
@@ -97,7 +97,7 @@ export function Modal({
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-700 flex items-center justify-end gap-3 flex-shrink-0">
+          <div className="px-6 py-4 border-t border-gray-700 light:border-gray-200 flex items-center justify-end gap-3 flex-shrink-0">
             {footer}
           </div>
         )}

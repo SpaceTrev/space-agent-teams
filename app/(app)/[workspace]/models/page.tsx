@@ -1,132 +1,183 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState, useEffect, useCallback, use } from 'react'
 import { ProviderConfig } from '../../../../components/models/provider-config'
 import { ModelPicker } from '../../../../components/models/model-picker'
-import { Brain, Plus, GitMerge, ArrowRight } from 'lucide-react'
+import { Brain, Plus, GitMerge, ArrowRight, Activity, Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
-import type { ModelProviderType } from '../../../../lib/types'
+import { useAuth } from '@/lib/auth-context'
+import type { ModelProviderType, ModelDefinition } from '../../../../lib/types'
 
-const configuredProviders = [
-  {
-    providerId: 'p1',
-    providerType: 'anthropic' as ModelProviderType,
-    displayName: 'Anthropic',
-    logoChar: 'A',
-    isActive: true,
-    isVerified: true,
-    hasApiKey: true,
-    defaultModel: 'claude-3-5-sonnet-20241022',
-    availableModels: [
-      { id: 'anthropic:claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', isFree: false },
-      { id: 'anthropic:claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', isFree: false },
-      { id: 'anthropic:claude-3-haiku-20240307', name: 'Claude 3 Haiku', isFree: false },
-      { id: 'anthropic:claude-3-opus-20240229', name: 'Claude 3 Opus', isFree: false },
-    ],
-    docsUrl: 'https://console.anthropic.com/api-keys',
-  },
-  {
-    providerId: 'p2',
-    providerType: 'groq' as ModelProviderType,
-    displayName: 'Groq',
-    logoChar: 'G',
-    isActive: true,
-    isVerified: true,
-    hasApiKey: true,
-    defaultModel: 'llama-3.1-70b-versatile',
-    availableModels: [
-      { id: 'groq:llama-3.1-70b-versatile', name: 'Llama 3.1 70B', isFree: false },
-      { id: 'groq:llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', isFree: false },
-      { id: 'groq:mixtral-8x7b-32768', name: 'Mixtral 8x7B', isFree: false },
-    ],
-    docsUrl: 'https://console.groq.com/keys',
-  },
-  {
-    providerId: 'p3',
-    providerType: 'gemini' as ModelProviderType,
-    displayName: 'Google Gemini',
-    logoChar: 'G',
-    isActive: false,
-    isVerified: false,
-    hasApiKey: false,
-    availableModels: [
-      { id: 'gemini:gemini-1.5-pro', name: 'Gemini 1.5 Pro', isFree: false },
-      { id: 'gemini:gemini-1.5-flash', name: 'Gemini 1.5 Flash', isFree: false },
-      { id: 'gemini:gemini-1.0-pro', name: 'Gemini 1.0 Pro', isFree: false },
-    ],
-    docsUrl: 'https://aistudio.google.com/app/apikey',
-  },
-  {
-    providerId: 'p4',
-    providerType: 'mistral' as ModelProviderType,
-    displayName: 'Mistral AI',
-    logoChar: 'M',
-    isActive: false,
-    isVerified: false,
-    hasApiKey: false,
-    availableModels: [
-      { id: 'mistral:mistral-large-latest', name: 'Mistral Large', isFree: false },
-      { id: 'mistral:mistral-small-latest', name: 'Mistral Small', isFree: false },
-    ],
-    docsUrl: 'https://console.mistral.ai/api-keys/',
-  },
-  {
-    providerId: 'p5',
-    providerType: 'ollama' as ModelProviderType,
-    displayName: 'Ollama (Local)',
-    logoChar: 'O',
-    isActive: false,
-    isVerified: false,
-    hasApiKey: false,
-    availableModels: [
-      { id: 'ollama:llama3.2', name: 'Llama 3.2', isFree: true },
-      { id: 'ollama:qwen2.5', name: 'Qwen 2.5', isFree: true },
-      { id: 'ollama:phi4', name: 'Phi-4', isFree: true },
-    ],
-  },
-  {
-    providerId: 'p6',
-    providerType: 'openrouter' as ModelProviderType,
-    displayName: 'OpenRouter',
-    logoChar: 'R',
-    isActive: false,
-    isVerified: false,
-    hasApiKey: false,
-    availableModels: [
-      { id: 'openrouter:meta-llama/llama-3.1-405b-instruct:free', name: 'Llama 3.1 405B (Free)', isFree: true },
-      { id: 'openrouter:google/gemini-pro-1.5', name: 'Gemini Pro 1.5', isFree: false },
-    ],
-    docsUrl: 'https://openrouter.ai/keys',
-  },
+// ― Static list of ALL known providers (from registry) ―
+// We merge DB state into this so unconfigured providers still show
+const KNOWN_PROVIDERS: {
+  providerType: ModelProviderType
+  displayName: string
+  logoChar: string
+  docsUrl?: string
+}[] = [
+  { providerType: 'anthropic', displayName: 'Anthropic', logoChar: 'A', docsUrl: 'https://console.anthropic.com/api-keys' },
+  { providerType: 'gemini', displayName: 'Google Gemini', logoChar: 'G', docsUrl: 'https://aistudio.google.com/app/apikey' },
+  { providerType: 'groq', displayName: 'Groq', logoChar: 'G', docsUrl: 'https://console.groq.com/keys' },
+  { providerType: 'perplexity', displayName: 'Perplexity', logoChar: 'P', docsUrl: 'https://docs.perplexity.ai/guides/getting-started' },
+  { providerType: 'mistral', displayName: 'Mistral AI', logoChar: 'M', docsUrl: 'https://console.mistral.ai/api-keys/' },
+  { providerType: 'openrouter', displayName: 'OpenRouter', logoChar: 'R', docsUrl: 'https://openrouter.ai/keys' },
+  { providerType: 'ollama', displayName: 'Ollama (Local)', logoChar: 'O' },
 ]
 
-const allModels = configuredProviders.flatMap((p) =>
-  p.availableModels.map((m) => ({
-    ...m,
-    provider: p.providerType,
-    providerName: p.displayName,
-    contextWindow: 128000,
-    inputCostPerMillion: m.isFree ? 0 : 1.5,
-  }))
-)
+interface ProviderRecord {
+  id: string
+  provider_type: ModelProviderType
+  display_name: string
+  is_active: boolean
+  is_verified: boolean
+  has_api_key: boolean
+  available_models: ModelDefinition[] | null
+  base_url: string | null
+}
+
+interface HealthResult {
+  provider: ModelProviderType
+  healthy: boolean
+  latency_ms?: number
+  error?: string
+  loading: boolean
+}
 
 const mockRoutingRules = [
-  { id: '1', name: 'High Priority Tasks', condition: 'Priority == Critical', model: 'anthropic:claude-3-5-sonnet-20241022', isActive: true },
-  { id: '2', name: 'Data Analysis', condition: 'Category == Analysis', model: 'groq:llama-3.1-70b-versatile', isActive: true },
+  { id: '1', name: 'High Priority Tasks', condition: 'Priority == Critical', model: 'anthropic:claude-sonnet-4-5', isActive: true },
+  { id: '2', name: 'Data Analysis', condition: 'Category == Analysis', model: 'groq:llama-3.3-70b-versatile', isActive: true },
   { id: '3', name: 'Web Research', condition: 'Requires Internet == True', model: 'perplexity:llama-3.1-sonar-large-128k-online', isActive: true },
   { id: '4', name: 'Nightly Batch Jobs', condition: 'Cost Sensitivity == High', model: 'groq:llama-3.1-8b-instant', isActive: false },
 ]
 
 export default function ModelsPage({ params }: { params: Promise<{ workspace: string }> }) {
   const { workspace } = use(params)
-  const [defaultModel, setDefaultModel] = useState('anthropic:claude-3-5-sonnet-20241022')
+  const { workspaces } = useAuth()
+  const [providers, setProviders] = useState<ProviderRecord[]>([])
+  const [defaultModel, setDefaultModel] = useState('anthropic:claude-sonnet-4-5')
+  const [pageLoading, setPageLoading] = useState(true)
+  const [healthResults, setHealthResults] = useState<Record<string, HealthResult>>({})
 
-  const handleSaveProvider = async (providerId: string, data: { apiKey?: string; defaultModel?: string; isActive: boolean }) => {
-    await new Promise((r) => setTimeout(r, 800))
-    console.log('Save provider:', providerId, data)
+  const ws = workspaces.find((w) => w.slug === workspace)
+
+  // ― Load configured providers from API ―
+  const loadProviders = useCallback(async () => {
+    if (!ws) return
+    try {
+      const res = await fetch(`/api/models?workspace_id=${ws.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setProviders(data.providers ?? [])
+      }
+    } catch {
+      // Fail silently — empty state will show
+    } finally {
+      setPageLoading(false)
+    }
+  }, [ws])
+
+  useEffect(() => {
+    loadProviders()
+  }, [loadProviders])
+
+  // ― Save / upsert a provider ―
+  const handleSaveProvider = async (
+    providerType: ModelProviderType,
+    data: { apiKey?: string; defaultModel?: string; isActive: boolean }
+  ) => {
+    if (!ws) return
+    const res = await fetch('/api/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspace_id: ws.id,
+        provider_type: providerType,
+        api_key: data.apiKey || undefined,
+        is_active: data.isActive,
+      }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error || 'Failed to save provider')
+    }
+    // Refresh list
+    await loadProviders()
   }
 
-  const verifiedCount = configuredProviders.filter((p) => p.isVerified).length
+  // ― Health-check a provider ―
+  const handleHealthCheck = async (providerType: ModelProviderType) => {
+    if (!ws) return
+    setHealthResults((prev) => ({
+      ...prev,
+      [providerType]: { provider: providerType, healthy: false, loading: true },
+    }))
+
+    try {
+      const res = await fetch('/api/models/health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspace_id: ws.id, provider_type: providerType }),
+      })
+      const data = await res.json()
+      setHealthResults((prev) => ({
+        ...prev,
+        [providerType]: {
+          provider: providerType,
+          healthy: data.healthy ?? false,
+          latency_ms: data.latency_ms,
+          error: data.error,
+          loading: false,
+        },
+      }))
+    } catch {
+      setHealthResults((prev) => ({
+        ...prev,
+        [providerType]: { provider: providerType, healthy: false, error: 'Network error', loading: false },
+      }))
+    }
+  }
+
+  // ― Merge known providers + DB state ―
+  const mergedProviders = KNOWN_PROVIDERS.map((known) => {
+    const dbRow = providers.find((p) => p.provider_type === known.providerType)
+    return {
+      providerType: known.providerType,
+      displayName: dbRow?.display_name ?? known.displayName,
+      logoChar: known.logoChar,
+      isActive: dbRow?.is_active ?? false,
+      isVerified: dbRow?.is_verified ?? false,
+      hasApiKey: dbRow?.has_api_key ?? false,
+      availableModels: (dbRow?.available_models ?? []).map((m: ModelDefinition) => ({
+        id: `${known.providerType}:${m.id}`,
+        name: m.name,
+        isFree: m.is_free ?? false,
+      })),
+      docsUrl: known.docsUrl,
+    }
+  })
+
+  // Build all-models list for model picker
+  const allModels = mergedProviders.flatMap((p) =>
+    p.availableModels.map((m) => ({
+      ...m,
+      provider: p.providerType,
+      providerName: p.displayName,
+      contextWindow: 128000,
+      inputCostPerMillion: m.isFree ? 0 : 1.5,
+    }))
+  )
+
+  const verifiedCount = mergedProviders.filter((p) => p.isVerified).length
+  const configuredCount = mergedProviders.filter((p) => p.hasApiKey).length
+
+  if (pageLoading) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-8 flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -138,7 +189,7 @@ export default function ModelsPage({ params }: { params: Promise<{ workspace: st
         <div>
           <h1 className="text-xl font-bold text-white">Model Providers</h1>
           <p className="text-sm text-gray-500">
-            {verifiedCount} of {configuredProviders.length} providers connected
+            {verifiedCount} verified · {configuredCount} configured of {KNOWN_PROVIDERS.length} providers
           </p>
         </div>
       </div>
@@ -193,14 +244,58 @@ export default function ModelsPage({ params }: { params: Promise<{ workspace: st
 
       {/* Provider configs */}
       <div className="space-y-3">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Configured Providers</h2>
-        {configuredProviders.map((provider) => (
-          <ProviderConfig
-            key={provider.providerId}
-            {...provider}
-            onSave={(data) => handleSaveProvider(provider.providerId!, data)}
-          />
-        ))}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Configured Providers</h2>
+        </div>
+        {mergedProviders.map((provider) => {
+          const health = healthResults[provider.providerType]
+          return (
+            <div key={provider.providerType}>
+              <ProviderConfig
+                providerType={provider.providerType}
+                displayName={provider.displayName}
+                logoChar={provider.logoChar}
+                isActive={provider.isActive}
+                isVerified={provider.isVerified}
+                hasApiKey={provider.hasApiKey}
+                availableModels={provider.availableModels}
+                docsUrl={provider.docsUrl}
+                onSave={(data) => handleSaveProvider(provider.providerType, data)}
+              />
+              {/* Health-check row (shown after save when provider has a key) */}
+              {provider.hasApiKey && (
+                <div className="flex items-center gap-3 mt-1 ml-14 text-xs">
+                  <button
+                    onClick={() => handleHealthCheck(provider.providerType)}
+                    className="inline-flex items-center gap-1.5 text-gray-500 hover:text-brand-400 transition-colors"
+                    disabled={health?.loading}
+                  >
+                    {health?.loading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Activity className="w-3 h-3" />
+                    )}
+                    Test Connection
+                  </button>
+                  {health && !health.loading && (
+                    <span className={clsx(
+                      "flex items-center gap-1",
+                      health.healthy ? "text-green-400" : "text-red-400"
+                    )}>
+                      <span className={clsx(
+                        "w-1.5 h-1.5 rounded-full",
+                        health.healthy ? "bg-green-400" : "bg-red-400"
+                      )} />
+                      {health.healthy
+                        ? `Connected (${health.latency_ms}ms)`
+                        : health.error || 'Connection failed'}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

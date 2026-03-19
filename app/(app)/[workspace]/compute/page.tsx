@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState, useEffect, use } from 'react'
 import { clsx } from 'clsx'
 import { Server, Plus, Cpu, HardDrive, DollarSign, Power, StopCircle, RefreshCw, Globe, Database } from 'lucide-react'
 import { Button } from '../../../../components/shared/button'
 import { Modal } from '../../../../components/shared/modal'
 import { Select, Input } from '../../../../components/shared/input'
 import { Badge } from '../../../../components/shared/badge'
+import { useAuth } from '@/lib/auth-context'
 import type { ComputeServerStatus } from '../../../../lib/types'
 
 interface ComputeServer {
@@ -14,60 +15,14 @@ interface ComputeServer {
   name: string
   provider: string
   status: ComputeServerStatus
-  region: string
+  region: string | null
   cpu: number
-  memoryMb: number
-  diskGb: number
-  costPerHour: number
-  publicUrl: string | null
-  startedAt: string | null
-  agentsRunning: number
+  memory_mb: number
+  disk_gb: number
+  cost_per_hour_usd: number
+  public_url: string | null
+  started_at: string | null
 }
-
-const mockServers: ComputeServer[] = [
-  {
-    id: 's1',
-    name: 'compute-01',
-    provider: 'Railway',
-    status: 'running',
-    region: 'us-east-1',
-    cpu: 4,
-    memoryMb: 8192,
-    diskGb: 20,
-    costPerHour: 0.12,
-    publicUrl: 'https://compute-01.up.railway.app',
-    startedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    agentsRunning: 5,
-  },
-  {
-    id: 's2',
-    name: 'compute-02',
-    provider: 'Railway',
-    status: 'running',
-    region: 'us-east-1',
-    cpu: 2,
-    memoryMb: 4096,
-    diskGb: 10,
-    costPerHour: 0.06,
-    publicUrl: 'https://compute-02.up.railway.app',
-    startedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    agentsRunning: 3,
-  },
-  {
-    id: 's3',
-    name: 'compute-dev',
-    provider: 'Fly.io',
-    status: 'stopped',
-    region: 'eu-west-1',
-    cpu: 2,
-    memoryMb: 2048,
-    diskGb: 10,
-    costPerHour: 0.04,
-    publicUrl: null,
-    startedAt: null,
-    agentsRunning: 0,
-  },
-]
 
 const statusConfig: Record<ComputeServerStatus, { variant: 'green' | 'gray' | 'yellow' | 'red'; label: string; dot: string }> = {
   running: { variant: 'green', label: 'Running', dot: 'bg-green-400 animate-pulse' },
@@ -92,22 +47,58 @@ const sizeOptions = [
 
 export default function ComputePage({ params }: { params: Promise<{ workspace: string }> }) {
   const { workspace } = use(params)
+  const { workspaces } = useAuth()
+  const [servers, setServers] = useState<ComputeServer[]>([])
   const [provisionOpen, setProvisionOpen] = useState(false)
   const [serverName, setServerName] = useState('')
   const [region, setRegion] = useState('us-east-1')
   const [size, setSize] = useState('medium')
-  const [loading, setLoading] = useState(false)
+  const [provisioning, setProvisioning] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
 
-  const runningServers = mockServers.filter((s) => s.status === 'running')
-  const totalCostPerHour = runningServers.reduce((sum, s) => sum + s.costPerHour, 0)
+  const ws = workspaces.find((w) => w.slug === workspace)
+
+  useEffect(() => {
+    if (!ws) return
+    fetch(`/api/compute?workspace_id=${ws.id}`)
+      .then((r) => r.ok ? r.json() : { servers: [] })
+      .then((data) => setServers(data.servers ?? []))
+      .catch(() => {})
+      .finally(() => setPageLoading(false))
+  }, [ws])
+
+  const runningServers = servers.filter((s) => s.status === 'running')
+  const totalCostPerHour = runningServers.reduce((sum, s) => sum + Number(s.cost_per_hour_usd || 0), 0)
 
   const handleProvision = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    setLoading(false)
-    setProvisionOpen(false)
-    setServerName('')
+    if (!ws || !serverName.trim()) return
+    setProvisioning(true)
+
+    try {
+      const res = await fetch('/api/compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspace_id: ws.id,
+          name: serverName.trim(),
+          provider: 'railway',
+          region,
+          size,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setServers((prev) => [data.server, ...prev])
+      }
+    } catch (err) {
+      console.error('Failed to provision server:', err)
+    } finally {
+      setProvisioning(false)
+      setProvisionOpen(false)
+      setServerName('')
+    }
   }
 
   const formatUptime = (startedAt: string | null) => {
@@ -116,6 +107,14 @@ export default function ComputePage({ params }: { params: Promise<{ workspace: s
     const hours = Math.floor(elapsed / 3600)
     const mins = Math.floor((elapsed % 3600) / 60)
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -138,7 +137,7 @@ export default function ComputePage({ params }: { params: Promise<{ workspace: s
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[
           { label: 'Running', value: runningServers.length, icon: Server, color: 'text-green-400', bg: 'bg-green-500/10' },
-          { label: 'Total agents', value: runningServers.reduce((s, sv) => s + sv.agentsRunning, 0), icon: RefreshCw, color: 'text-brand-400', bg: 'bg-brand-500/10' },
+          { label: 'Total servers', value: servers.length, icon: RefreshCw, color: 'text-brand-400', bg: 'bg-brand-500/10' },
           { label: 'Cost / hr', value: `$${totalCostPerHour.toFixed(3)}`, icon: DollarSign, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
         ].map((stat) => {
           const Icon = stat.icon
@@ -155,89 +154,96 @@ export default function ComputePage({ params }: { params: Promise<{ workspace: s
       </div>
 
       {/* Server list */}
-      <div className="space-y-4">
-        {mockServers.map((server) => {
-          const config = statusConfig[server.status]
-          return (
-            <div key={server.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
-                    <Server className="w-5 h-5 text-gray-500" />
-                    <span className={clsx(
-                      'absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900',
-                      config.dot
-                    )} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-white">{server.name}</p>
-                      <Badge variant={config.variant} size="sm" dot>{config.label}</Badge>
+      {servers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center mb-4">
+            <Server className="w-8 h-8 text-gray-600" />
+          </div>
+          <p className="text-sm font-medium text-gray-300">No compute servers</p>
+          <p className="text-xs text-gray-500 mt-1">Provision a server to run your agents</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {servers.map((server) => {
+            const config = statusConfig[server.status] ?? statusConfig.stopped
+            return (
+              <div key={server.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
+                      <Server className="w-5 h-5 text-gray-500" />
+                      <span className={clsx(
+                        'absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900',
+                        config.dot
+                      )} />
                     </div>
-                    <p className="text-xs text-gray-500">{server.provider} &middot; {server.region}</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-white">{server.name}</p>
+                        <Badge variant={config.variant} size="sm" dot>{config.label}</Badge>
+                      </div>
+                      <p className="text-xs text-gray-500">{server.provider} {server.region ? `· ${server.region}` : ''}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {server.status === 'running' && (
+                      <Button variant="outline" size="sm">
+                        <StopCircle className="w-3.5 h-3.5 text-red-400" />
+                        Stop
+                      </Button>
+                    )}
+                    {server.status === 'stopped' && (
+                      <Button variant="outline" size="sm">
+                        <Power className="w-3.5 h-3.5 text-green-400" />
+                        Start
+                      </Button>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {server.status === 'running' && (
-                    <Button variant="outline" size="sm">
-                      <StopCircle className="w-3.5 h-3.5 text-red-400" />
-                      Stop
-                    </Button>
-                  )}
-                  {server.status === 'stopped' && (
-                    <Button variant="outline" size="sm">
-                      <Power className="w-3.5 h-3.5 text-green-400" />
-                      Start
-                    </Button>
-                  )}
+                {/* Specs */}
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Cpu className="w-3.5 h-3.5" />
+                    {server.cpu} vCPU
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Database className="w-3.5 h-3.5" />
+                    {(server.memory_mb / 1024).toFixed(0)} GB RAM
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <HardDrive className="w-3.5 h-3.5" />
+                    {server.disk_gb} GB disk
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-yellow-400">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span className="font-mono">${Number(server.cost_per_hour_usd || 0).toFixed(3)}/hr</span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Specs */}
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Cpu className="w-3.5 h-3.5" />
-                  {server.cpu} vCPU
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Database className="w-3.5 h-3.5" />
-                  {(server.memoryMb / 1024).toFixed(0)} GB RAM
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <HardDrive className="w-3.5 h-3.5" />
-                  {server.diskGb} GB disk
-                </div>
-                <div className="flex items-center gap-2 text-xs text-yellow-400">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span className="font-mono">${server.costPerHour.toFixed(3)}/hr</span>
+                {/* Footer info */}
+                <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
+                  {server.started_at && (
+                    <span>Uptime: {formatUptime(server.started_at)}</span>
+                  )}
+                  {server.public_url && (
+                    <a
+                      href={server.public_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-brand-400 hover:text-brand-300 transition-colors"
+                    >
+                      <Globe className="w-3 h-3" />
+                      {server.public_url.replace('https://', '')}
+                    </a>
+                  )}
                 </div>
               </div>
-
-              {/* Footer info */}
-              <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
-                {server.startedAt && (
-                  <span>Uptime: {formatUptime(server.startedAt)}</span>
-                )}
-                {server.agentsRunning > 0 && (
-                  <span className="text-green-400">{server.agentsRunning} agents running</span>
-                )}
-                {server.publicUrl && (
-                  <a
-                    href={server.publicUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-brand-400 hover:text-brand-300 transition-colors"
-                  >
-                    <Globe className="w-3 h-3" />
-                    {server.publicUrl.replace('https://', '')}
-                  </a>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Provision modal */}
       <Modal
@@ -249,7 +255,7 @@ export default function ComputePage({ params }: { params: Promise<{ workspace: s
         footer={
           <>
             <Button variant="ghost" onClick={() => setProvisionOpen(false)}>Cancel</Button>
-            <Button variant="primary" loading={loading} onClick={handleProvision}>
+            <Button variant="primary" loading={provisioning} onClick={handleProvision}>
               <Server className="w-4 h-4" />
               Provision
             </Button>
