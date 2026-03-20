@@ -1,12 +1,7 @@
 {
-  "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/api/tasks/route": "app/api/tasks/route.js",
-  "/api/agents/route": "app/api/agents/route.js",
-  "/api/sprints/route": "app/api/sprints/route.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
   "/(marketing)/pricing/page": "app/(marketing)/pricing/page.js",
   "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
   "/(app)/[workspace]/billing/page": "app/(app)/[workspace]/billing/page.js",
-  "/(app)/[workspace]/settings/page": "app/(app)/[workspace]/settings/page.js",
-  "/(app)/[workspace]/page": "app/(app)/[workspace]/page.js"
+  "/(app)/[workspace]/settings/page": "app/(app)/[workspace]/settings/page.js"
 }
