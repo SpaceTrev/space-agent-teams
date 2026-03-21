@@ -1,12 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Bot, Plus, X, Upload } from 'lucide-react'
+import { ChevronLeft, Bot, Plus, X } from 'lucide-react'
 import { Input, Textarea, Select } from '../../../../../components/shared/input'
 import { Button } from '../../../../../components/shared/button'
 import { ModelPicker } from '../../../../../components/models/model-picker'
+import type { ModelProviderType } from '../../../../../lib/types'
+
+interface PickerModel {
+  id: string
+  name: string
+  provider: ModelProviderType
+  providerName: string
+  contextWindow?: number
+  isFree: boolean
+  inputCostPerMillion?: number
+}
 
 const departmentOptions = [
   { value: '', label: 'No department' },
@@ -24,15 +35,6 @@ const agentTypeOptions = [
   { value: 'reviewer', label: 'Reviewer — Reviews and approves work' },
 ]
 
-const mockModels = [
-  { id: 'anthropic:claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic' as const, providerName: 'Anthropic', contextWindow: 200000, isFree: false, inputCostPerMillion: 3.0 },
-  { id: 'anthropic:claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'anthropic' as const, providerName: 'Anthropic', contextWindow: 200000, isFree: false, inputCostPerMillion: 0.25 },
-  { id: 'groq:llama-3.1-70b-versatile', name: 'Llama 3.1 70B', provider: 'groq' as const, providerName: 'Groq', contextWindow: 131072, isFree: false, inputCostPerMillion: 0.59 },
-  { id: 'groq:llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant', provider: 'groq' as const, providerName: 'Groq', contextWindow: 131072, isFree: false, inputCostPerMillion: 0.05 },
-  { id: 'gemini:gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini' as const, providerName: 'Google Gemini', contextWindow: 1000000, isFree: false, inputCostPerMillion: 3.5 },
-  { id: 'ollama:llama3.2', name: 'Llama 3.2 (local)', provider: 'ollama' as const, providerName: 'Ollama', contextWindow: 128000, isFree: true },
-]
-
 export default function NewAgentPage() {
   const router = useRouter()
   const params = useParams()
@@ -42,13 +44,38 @@ export default function NewAgentPage() {
   const [role, setRole] = useState('')
   const [department, setDepartment] = useState('')
   const [type, setType] = useState('worker')
-  const [model, setModel] = useState('anthropic:claude-3-5-sonnet-20241022')
+  const [model, setModel] = useState('')
   const [systemPrompt, setSystemPrompt] = useState('')
   const [personality, setPersonality] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [models, setModels] = useState<PickerModel[]>([])
+  const [modelsLoading, setModelsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchModels() {
+      try {
+        const res = await fetch('/api/models/available')
+        if (!res.ok) return
+        const data = await res.json()
+        const pickerModels: PickerModel[] = data.picker_models ?? []
+        setModels(pickerModels)
+        if (pickerModels.length > 0 && !model) {
+          // Default to first free model, or first model overall
+          const firstFree = pickerModels.find((m) => m.isFree)
+          setModel((firstFree ?? pickerModels[0]).id)
+        }
+      } catch {
+        // Non-fatal — ModelPicker will show empty state
+      } finally {
+        setModelsLoading(false)
+      }
+    }
+    fetchModels()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
@@ -156,9 +183,11 @@ export default function NewAgentPage() {
           <h2 className="text-sm font-semibold text-white mb-4">Model Configuration</h2>
           <ModelPicker
             label="AI Model"
-            models={mockModels}
+            models={models}
             value={model}
             onChange={setModel}
+            disabled={modelsLoading}
+            placeholder={modelsLoading ? 'Loading models...' : 'Select a model...'}
           />
           <p className="mt-2 text-xs text-gray-500">
             The model this agent will use for all tasks. Can be changed later.

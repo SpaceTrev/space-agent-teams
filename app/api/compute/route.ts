@@ -32,6 +32,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Seed fallback: return realistic demo data when DB is empty
+    if (!servers || servers.length === 0) {
+      const now = Date.now()
+      const seedServers = [
+        {
+          id: 'server-001', workspace_id: workspaceId, name: 'agent-runner-prod', provider: 'railway',
+          status: 'running', provider_server_id: 'railway-srv-abc123', region: 'us-west2',
+          cpu: 2, memory_mb: 1024, disk_gb: 20,
+          public_url: 'https://agent-runner-prod.up.railway.app', internal_url: 'http://agent-runner-prod.railway.internal:8080',
+          provider_metadata: { project_id: 'proj-xyz', service_id: 'svc-abc' },
+          cost_per_hour_usd: 0.048, started_at: new Date(now - 5 * 24 * 3600000).toISOString(), stopped_at: null,
+          created_at: new Date(now - 5 * 24 * 3600000).toISOString(), updated_at: new Date(now - 3600000).toISOString(),
+        },
+        {
+          id: 'server-002', workspace_id: workspaceId, name: 'agent-runner-staging', provider: 'fly',
+          status: 'stopped', provider_server_id: 'fly-app-def456', region: 'iad',
+          cpu: 1, memory_mb: 512, disk_gb: 10,
+          public_url: 'https://agent-runner-staging.fly.dev', internal_url: 'http://agent-runner-staging.internal:8080',
+          provider_metadata: { app_id: 'agent-runner-staging', org_slug: 'personal' },
+          cost_per_hour_usd: 0.022, started_at: new Date(now - 10 * 24 * 3600000).toISOString(), stopped_at: new Date(now - 2 * 24 * 3600000).toISOString(),
+          created_at: new Date(now - 10 * 24 * 3600000).toISOString(), updated_at: new Date(now - 2 * 24 * 3600000).toISOString(),
+        },
+      ]
+      return NextResponse.json({ servers: seedServers })
+    }
+
     return NextResponse.json({ servers })
   } catch (err) {
     const { message, statusCode } = toErrorResponse(err)

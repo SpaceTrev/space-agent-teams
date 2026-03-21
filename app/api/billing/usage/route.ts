@@ -107,6 +107,36 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const totalEvents = allEvents?.length ?? 0
+
+    // Seed fallback: return realistic demo data when DB has no usage events
+    if (totalEvents === 0) {
+      const seedMonths = [
+        { month: '2026-03', tasks_completed: 1240, tokens_used: 4820000, compute_hours: 7.5, cost_usd: 124.50 },
+        { month: '2026-02', tasks_completed: 980, tokens_used: 3600000, compute_hours: 5.2, cost_usd: 99.00 },
+        { month: '2026-01', tasks_completed: 720, tokens_used: 2800000, compute_hours: 3.8, cost_usd: 99.00 },
+      ]
+      const current = seedMonths[0]
+      return NextResponse.json({
+        events: [],
+        summary: {
+          total_cost_usd: current.cost_usd,
+          total_tokens: current.tokens_used,
+          total_compute_seconds: Math.round(current.compute_hours * 3600),
+          by_event_type: {
+            llm_tokens: { quantity: current.tokens_used, cost_usd: 58.2, count: current.tasks_completed },
+            compute_seconds: { quantity: Math.round(current.compute_hours * 3600), cost_usd: 11.4, count: 12 },
+          },
+          by_model: {},
+          by_provider: {},
+        },
+        period: { from, to },
+        pagination: { page, per_page: perPage, total: 0 },
+        monthly_history: seedMonths,
+        is_seed_data: true,
+      })
+    }
+
     return NextResponse.json({
       events,
       summary,
@@ -114,8 +144,10 @@ export async function GET(req: NextRequest) {
       pagination: {
         page,
         per_page: perPage,
-        total: allEvents?.length ?? 0,
+        total: totalEvents,
       },
+      monthly_history: [],
+      is_seed_data: false,
     })
   } catch (err) {
     const { message, statusCode } = toErrorResponse(err)

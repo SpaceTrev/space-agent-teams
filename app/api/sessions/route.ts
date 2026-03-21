@@ -47,6 +47,35 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Seed fallback: return realistic demo data when DB is empty
+    if (!sessions || sessions.length === 0) {
+      const now = Date.now()
+      const seedSessions = [
+        {
+          id: 'session-001', workspace_id: workspaceId, session_type: 'planning', sprint_id: 'sprint-002',
+          status: 'completed', participants: ['agent-001', 'agent-002', 'agent-003'],
+          context: { goal: 'Plan Sprint 2 tasks and assign owners' },
+          started_at: new Date(now - 8 * 24 * 3600000).toISOString(), ended_at: new Date(now - 8 * 24 * 3600000 + 1800000).toISOString(),
+          created_by: 'seed', created_at: new Date(now - 8 * 24 * 3600000).toISOString(), updated_at: new Date(now - 8 * 24 * 3600000 + 1800000).toISOString(),
+        },
+        {
+          id: 'session-002', workspace_id: workspaceId, session_type: 'standup', sprint_id: 'sprint-002',
+          status: 'completed', participants: ['agent-001', 'agent-002'],
+          context: { goal: 'Daily standup — blockers and progress' },
+          started_at: new Date(now - 24 * 3600000).toISOString(), ended_at: new Date(now - 24 * 3600000 + 600000).toISOString(),
+          created_by: 'seed', created_at: new Date(now - 24 * 3600000).toISOString(), updated_at: new Date(now - 24 * 3600000 + 600000).toISOString(),
+        },
+        {
+          id: 'session-003', workspace_id: workspaceId, session_type: 'strategy', sprint_id: null,
+          status: 'active', participants: ['agent-003'],
+          context: { goal: 'Evaluate model performance and cost trade-offs for Q2' },
+          started_at: new Date(now - 3600000).toISOString(), ended_at: null,
+          created_by: 'seed', created_at: new Date(now - 3600000).toISOString(), updated_at: new Date(now - 1800000).toISOString(),
+        },
+      ]
+      return NextResponse.json({ sessions: seedSessions })
+    }
+
     return NextResponse.json({ sessions })
   } catch (err) {
     const { message, statusCode } = toErrorResponse(err)

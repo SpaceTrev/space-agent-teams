@@ -25,11 +25,23 @@ export async function GET(req: NextRequest) {
     const freeModels = allModels.filter((m) => m.is_free)
     const paidModels = allModels.filter((m) => !m.is_free)
 
+    // Picker-ready shape — camelCase fields matching ModelPicker component
+    const pickerModels = allModels.map((m) => ({
+      id: `${m.provider}:${m.id}`,
+      name: m.name,
+      provider: m.provider,
+      providerName: PROVIDERS[m.provider]?.name ?? m.provider,
+      contextWindow: m.context_window,
+      isFree: m.is_free,
+      inputCostPerMillion: m.input_cost_per_million,
+    }))
+
     return NextResponse.json({
       providers: byProvider,
       models: allModels,
       free_models: freeModels,
       paid_models: paidModels,
+      picker_models: pickerModels,
       total_count: allModels.length,
       free_count: freeModels.length,
     })

@@ -53,6 +53,58 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Seed fallback: return realistic demo data when DB is empty
+    if (!tasks || tasks.length === 0) {
+      const now = Date.now()
+      const seedTasks = [
+        {
+          id: 'task-001', workspace_id: workspaceId, sprint_id: 'sprint-001', agent_id: 'agent-001', parent_task_id: null,
+          title: 'Analyze Q1 sales data and generate insights report', description: 'Pull Q1 sales data, identify trends, and produce an executive summary.',
+          status: 'completed', priority: 'high', input: { quarter: 'Q1' }, output: { summary: 'Revenue up 18% YoY.' }, error_message: null,
+          retry_count: 0, model_used: 'gemini:gemini-2.0-flash', tokens_input: 12400, tokens_output: 3200, cost_usd: 0.0,
+          queued_at: new Date(now - 2 * 24 * 3600000).toISOString(), started_at: new Date(now - 2 * 24 * 3600000 + 60000).toISOString(),
+          completed_at: new Date(now - 2 * 24 * 3600000 + 840000).toISOString(), estimated_duration_seconds: 600, actual_duration_seconds: 780,
+          depends_on: [], tags: ['analytics', 'reporting'], metadata: {}, created_by: 'seed',
+          created_at: new Date(now - 2 * 24 * 3600000).toISOString(), updated_at: new Date(now - 2 * 24 * 3600000 + 840000).toISOString(),
+          agent: { id: 'agent-001', name: 'Research Agent', type: 'specialist' }, sprint: { id: 'sprint-001', name: 'Sprint 1: Core Infrastructure' },
+        },
+        {
+          id: 'task-002', workspace_id: workspaceId, sprint_id: 'sprint-002', agent_id: 'agent-002', parent_task_id: null,
+          title: 'Refactor authentication middleware for better error handling', description: 'Improve auth middleware to return structured errors and add retry logic.',
+          status: 'running', priority: 'high', input: { file: 'middleware/auth.ts' }, output: null, error_message: null,
+          retry_count: 0, model_used: 'anthropic:claude-sonnet-4-6', tokens_input: 5800, tokens_output: 1100, cost_usd: 0.042,
+          queued_at: new Date(now - 3600000).toISOString(), started_at: new Date(now - 1800000).toISOString(),
+          completed_at: null, estimated_duration_seconds: 300, actual_duration_seconds: null,
+          depends_on: [], tags: ['refactor', 'auth'], metadata: {}, created_by: 'seed',
+          created_at: new Date(now - 4 * 3600000).toISOString(), updated_at: new Date(now - 1800000).toISOString(),
+          agent: { id: 'agent-002', name: 'Code Agent', type: 'worker' }, sprint: { id: 'sprint-002', name: 'Sprint 2: Agent UI Polish' },
+        },
+        {
+          id: 'task-003', workspace_id: workspaceId, sprint_id: 'sprint-002', agent_id: 'agent-001', parent_task_id: null,
+          title: 'Research competitor pricing strategies', description: 'Survey top 5 competitors and compile a pricing comparison matrix.',
+          status: 'pending', priority: 'normal', input: { competitors: ['CompetitorA', 'CompetitorB'] }, output: null, error_message: null,
+          retry_count: 0, model_used: null, tokens_input: 0, tokens_output: 0, cost_usd: 0.0,
+          queued_at: null, started_at: null, completed_at: null, estimated_duration_seconds: 900, actual_duration_seconds: null,
+          depends_on: [], tags: ['research', 'strategy'], metadata: {}, created_by: 'seed',
+          created_at: new Date(now - 24 * 3600000).toISOString(), updated_at: new Date(now - 24 * 3600000).toISOString(),
+          agent: { id: 'agent-001', name: 'Research Agent', type: 'specialist' }, sprint: { id: 'sprint-002', name: 'Sprint 2: Agent UI Polish' },
+        },
+        {
+          id: 'task-004', workspace_id: workspaceId, sprint_id: 'sprint-001', agent_id: 'agent-003', parent_task_id: null,
+          title: 'Generate weekly status update for stakeholders', description: 'Compile completed tasks, blockers, and next steps into a status update.',
+          status: 'failed', priority: 'normal', input: { week: '2026-W11' }, output: null,
+          error_message: 'Model rate limit exceeded after 3 retries. Please try again later.',
+          retry_count: 3, model_used: 'groq:llama-3.1-70b-versatile', tokens_input: 2100, tokens_output: 0, cost_usd: 0.0,
+          queued_at: new Date(now - 3 * 24 * 3600000).toISOString(), started_at: new Date(now - 3 * 24 * 3600000 + 30000).toISOString(),
+          completed_at: null, estimated_duration_seconds: 180, actual_duration_seconds: null,
+          depends_on: [], tags: ['reporting'], metadata: {}, created_by: 'seed',
+          created_at: new Date(now - 3 * 24 * 3600000).toISOString(), updated_at: new Date(now - 3 * 24 * 3600000 + 90000).toISOString(),
+          agent: { id: 'agent-003', name: 'Orchestrator', type: 'orchestrator' }, sprint: { id: 'sprint-001', name: 'Sprint 1: Core Infrastructure' },
+        },
+      ]
+      return NextResponse.json({ tasks: seedTasks, pagination: { page, per_page: perPage, total: seedTasks.length } })
+    }
+
     return NextResponse.json({
       tasks,
       pagination: {

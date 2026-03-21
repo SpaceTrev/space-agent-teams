@@ -83,6 +83,32 @@ export async function GET(req: NextRequest) {
       stats: sprintStats[sprint.id] ?? null,
     }))
 
+    // Seed fallback: return realistic demo data when DB is empty
+    if (sprintsWithStats.length === 0) {
+      const now = Date.now()
+      const seedSprints = [
+        {
+          id: 'sprint-001', workspace_id: workspaceId, name: 'Sprint 1: Core Infrastructure',
+          description: 'Establish foundational DB schema, auth flows, and model registry.',
+          status: 'completed', goal: 'Ship a working end-to-end agent task execution pipeline.',
+          starts_at: new Date(now - 28 * 24 * 3600000).toISOString(), ends_at: new Date(now - 14 * 24 * 3600000).toISOString(),
+          completed_at: new Date(now - 14 * 24 * 3600000).toISOString(), created_by: 'seed',
+          created_at: new Date(now - 30 * 24 * 3600000).toISOString(), updated_at: new Date(now - 14 * 24 * 3600000).toISOString(),
+          stats: { total_tasks: 12, completed_tasks: 11, failed_tasks: 1, in_progress_tasks: 0, total_tokens_used: 284000, total_cost_usd: 1.84, avg_task_duration_seconds: 420 },
+        },
+        {
+          id: 'sprint-002', workspace_id: workspaceId, name: 'Sprint 2: Agent UI Polish',
+          description: 'Improve agent management UI, task dispatch flows, and sprint views.',
+          status: 'active', goal: 'Deliver a fully usable web UI that works without real DB data.',
+          starts_at: new Date(now - 7 * 24 * 3600000).toISOString(), ends_at: new Date(now + 7 * 24 * 3600000).toISOString(),
+          completed_at: null, created_by: 'seed',
+          created_at: new Date(now - 8 * 24 * 3600000).toISOString(), updated_at: new Date(now - 24 * 3600000).toISOString(),
+          stats: { total_tasks: 8, completed_tasks: 3, failed_tasks: 0, in_progress_tasks: 2, total_tokens_used: 98000, total_cost_usd: 0.56, avg_task_duration_seconds: 310 },
+        },
+      ]
+      return NextResponse.json({ sprints: seedSprints })
+    }
+
     return NextResponse.json({ sprints: sprintsWithStats })
   } catch (err) {
     const { message, statusCode } = toErrorResponse(err)
